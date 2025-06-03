@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100">
+  <g>
+    <path d="M50 20 C 60 20, 70 30, 70 50 C 70 70, 60 80, 50 80 L 30 80 L 30 20 L 50 20 Z" fill="#5A5A5A"/>
+    <path d="M30 20 L 50 20 C 60 20, 70 30, 70 50 C 70 70, 60 80, 50 80 L 30 80 Z" fill="none" stroke="#5A5A5A" stroke-width="2"/>
+    
+    <!-- Left Wing -->
+    <path d="M20 50 C 15 40, 10 35, 5 40 C 0 45, 5 55, 15 65 C 25 75, 35 80, 40 75 C 45 70, 40 60, 30 50" fill="none" stroke="#D4AF37" stroke-width="1.5"/>
+    <path d="M20 50 C 15 45, 10 45, 5 50 C 0 55, 5 65, 15 75 C 25 85, 35 90, 40 85 C 45 80, 40 70, 30 60" fill="none" stroke="#5A5A5A" stroke-width="1.5"/>
+    
+    <!-- Right Wing -->
+    <path d="M80 50 C 85 40, 90 35, 95 40 C 100 45, 95 55, 85 65 C 75 75, 65 80, 60 75 C 55 70, 60 60, 70 50" fill="none" stroke="#D4AF37" stroke-width="1.5"/>
+    <path d="M80 50 C 85 45, 90 45, 95 50 C 100 55, 95 65, 85 75 C 75 85, 65 90, 60 85 C 55 80, 60 70, 70 60" fill="none" stroke="#5A5A5A" stroke-width="1.5"/>
+  </g>
+  
+  <!-- DXM Text -->
+  <text x="120" y="45" font-family="Arial" font-weight="bold" font-size="20" fill="#5A5A5A">DXM</text>
+  
+  <!-- Productions Text -->
+  <text x="170" y="45" font-family="Arial" font-size="16" fill="#5A5A5A">PRODUCTIONS</text>
+</svg>
