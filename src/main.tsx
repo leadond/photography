@@ -1,15 +1,24 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import App from './App'
 import './index.css'
-import { Toaster } from 'react-hot-toast'
+import { AuthProvider } from './context/AuthContext'
+import { GalleryProvider } from './context/GalleryContext'
+import { BookingProvider } from './context/BookingContext'
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
-      <Toaster position="top-center" />
+      <AuthProvider>
+        <GalleryProvider>
+          <BookingProvider>
+            <App />
+            <Toaster position="top-right" />
+          </BookingProvider>
+        </GalleryProvider>
+      </AuthProvider>
     </BrowserRouter>
-  </React.StrictMode>
+  </React.StrictMode>,
 )

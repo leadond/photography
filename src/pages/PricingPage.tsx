@@ -1,416 +1,164 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import AnimatedBackground from '../components/AnimatedBackground'
-import GlassCard from '../components/GlassCard'
-
-const pricingPlans = [
-  {
-    id: 'graduation',
-    name: 'Graduation Package',
-    description: 'Perfect for capturing your graduation day memories.',
-    price: 299,
-    features: [
-      '1-hour photo session',
-      'Up to 3 outfit changes',
-      '25 digital images',
-      'Online gallery',
-      'Print release',
-      '5 professional prints (8x10)'
-    ],
-    popular: false
-  },
-  {
-    id: 'family',
-    name: 'Family Portrait Package',
-    description: 'Capture beautiful family moments to cherish forever.',
-    price: 349,
-    features: [
-      '1.5-hour photo session',
-      'Up to 2 locations',
-      '30 digital images',
-      'Online gallery',
-      'Print release',
-      '1 canvas print (16x20)'
-    ],
-    popular: true
-  },
-  {
-    id: 'corporate',
-    name: 'Corporate Event Package',
-    description: 'Professional coverage for your corporate events.',
-    price: 599,
-    features: [
-      '4-hour event coverage',
-      'Multiple photographers',
-      '100+ digital images',
-      'Online gallery',
-      'Commercial usage rights',
-      'Quick turnaround (48 hours)'
-    ],
-    popular: false
-  },
-  {
-    id: 'headshots',
-    name: 'Professional Headshots',
-    description: 'Elevate your professional image with quality headshots.',
-    price: 199,
-    features: [
-      '30-minute studio session',
-      '2 outfit changes',
-      '10 digital images',
-      'Professional retouching',
-      'Online gallery',
-      'LinkedIn optimization'
-    ],
-    popular: false
-  }
-]
-
-const faqs = [
-  {
-    question: 'How far in advance should I book a session?',
-    answer: 'We recommend booking at least 2-3 weeks in advance for portrait sessions and 1-2 months for events to ensure availability. However, we do our best to accommodate last-minute bookings when possible.'
-  },
-  {
-    question: 'What should I wear for my photo session?',
-    answer: "We recommend wearing solid colors and avoiding busy patterns. For family portraits, coordinating colors rather than matching exactly often works best. We're happy to provide more specific guidance based on your session type and location."
-  },
-  {
-    question: 'How long until I receive my photos?',
-    answer: "For portrait sessions, you'll receive your edited photos within 1-2 weeks. For events, delivery time is typically 2-3 weeks. Rush delivery is available for an additional fee."
-  },
-  {
-    question: 'Do you offer mini sessions?',
-    answer: "Yes! We offer seasonal mini sessions throughout the year. These are shorter sessions at a reduced price. Follow us on social media or join our email list to be notified when mini sessions are available."
-  },
-  {
-    question: 'What happens if it rains on the day of my outdoor session?',
-    answer: "If weather conditions are unfavorable for an outdoor shoot, we'll reschedule at no additional cost. We monitor the weather closely and will communicate with you if we anticipate any issues."
-  },
-  {
-    question: 'Do you offer payment plans?',
-    answer: "Yes, we offer flexible payment plans for packages over $300. Typically, this involves a 50% deposit to secure your date with the remaining balance due before or on the day of your session."
-  }
-]
+import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import PageTransition from '../components/PageTransition'
+import Hero from '../components/Hero'
+import SectionTitle from '../components/SectionTitle'
+import PricingCard from '../components/PricingCard'
+import { useBooking } from '../context/BookingContext'
 
 const PricingPage = () => {
-  const [selectedFaq, setSelectedFaq] = useState<number | null>(null)
-  
-  const toggleFaq = (index: number) => {
-    setSelectedFaq(selectedFaq === index ? null : index)
-  }
+  const { packages } = useBooking()
   
   return (
-    <div className="bg-white">
+    <PageTransition>
       {/* Hero Section */}
-      <section className="relative bg-gray-900 py-20">
-        <div className="absolute inset-0">
-          <img
-            className="w-full h-full object-cover"
-            src="https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-            alt="Pricing"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-900/70 to-gray-900/80"></div>
-        </div>
-        
-        <AnimatedBackground variant="dark" density={20} className="opacity-30" />
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.h1 
-            className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl font-serif"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Our Pricing
-          </motion.h1>
-          
-          <motion.div
-            className="mt-6 max-w-3xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <p className="text-xl text-gray-300">
-              Transparent pricing for our professional photography services.
-            </p>
-          </motion.div>
-        </div>
-      </section>
+      <Hero
+        title="Photography Pricing"
+        subtitle="Transparent pricing for our professional photography services"
+        backgroundImage="https://images.pexels.com/photos/1684187/pexels-photo-1684187.jpeg?auto=compress&cs=tinysrgb&w=1500"
+        height="medium"
+      />
       
-      {/* Pricing Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl font-serif">
-            Choose the Perfect Package
-          </h2>
-          <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
-            We offer a variety of packages to suit your needs. All packages include professional editing and a personal online gallery.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {pricingPlans.map((plan, index) => (
-            <motion.div
-              key={plan.id}
-              id={plan.id}
-              className={`relative rounded-lg shadow-lg overflow-hidden ${
-                plan.popular ? 'border-2 border-primary-500' : 'border border-gray-200'
-              }`}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true, margin: "-100px" }}
-              whileHover={{ y: -5 }}
-            >
-              {plan.popular && (
-                <div className="absolute top-0 right-0 bg-primary-500 text-white text-xs font-bold px-3 py-1 transform translate-x-2 -translate-y-2 rotate-45">
-                  Popular
-                </div>
-              )}
-              
-              <div className="p-6 bg-white">
-                <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                <p className="mt-2 text-gray-600 h-12">{plan.description}</p>
-                <p className="mt-4">
-                  <span className="text-4xl font-extrabold text-gray-900">${plan.price}</span>
-                </p>
-                
-                <ul className="mt-6 space-y-4">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <p className="ml-3 text-gray-700">{feature}</p>
-                    </li>
-                  ))}
-                </ul>
-                
-                <div className="mt-8">
-                  <a
-                    href="/contact"
-                    className={`block w-full text-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium ${
-                      plan.popular
-                        ? 'text-white bg-primary-600 hover:bg-primary-700'
-                        : 'text-primary-600 bg-white border-primary-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    Book Now
-                  </a>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-      
-      {/* Custom Packages */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl font-serif">
-              Need Something Custom?
-            </h2>
-            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
-              We understand that every client has unique needs. Contact us to discuss a custom package tailored just for you.
-            </p>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              <div className="p-10 lg:p-16 flex flex-col justify-center">
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">Custom Photography Solutions</h3>
-                <p className="text-gray-600 mb-6">
-                  Our custom packages can include:
-                </p>
-                
-                <div className="space-y-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg className="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-gray-700">Extended shooting time</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg className="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-gray-700">Multiple locations</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg className="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-gray-700">Specialized equipment</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg className="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-gray-700">Additional photographers</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg className="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-gray-700">Custom print packages</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-8">
-                  <a
-                    href="/contact"
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
-                  >
-                    Contact for Custom Quote
-                  </a>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <img 
-                  className="absolute inset-0 h-full w-full object-cover"
-                  src="https://images.pexels.com/photos/3771836/pexels-photo-3771836.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                  alt="Custom photography"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-600/30 to-primary-800/30"></div>
-                
-                <div className="absolute bottom-8 left-8 right-8">
-                  <GlassCard className="p-6" blur="lg" opacity={0.2}>
-                    <div className="text-center text-white">
-                      <h4 className="text-xl font-bold mb-2">Let's Create Something Special</h4>
-                      <p>Every vision deserves a custom approach</p>
-                    </div>
-                  </GlassCard>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* FAQ Section */}
+      {/* Pricing Packages */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl font-serif">
-              Frequently Asked Questions
-            </h2>
-            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
-              Find answers to common questions about our photography services.
-            </p>
-          </div>
+        <div className="container mx-auto px-4">
+          <SectionTitle
+            title="Our Photography Packages"
+            subtitle="Choose the perfect package for your photography needs"
+          />
           
-          <div className="max-w-3xl mx-auto divide-y divide-gray-200">
-            {faqs.map((faq, index) => (
-              <div key={index} className="py-6">
-                <button
-                  className="flex w-full justify-between items-center text-left focus:outline-none"
-                  onClick={() => toggleFaq(index)}
-                >
-                  <h3 className="text-lg font-medium text-gray-900">{faq.question}</h3>
-                  <span className="ml-6 flex-shrink-0">
-                    <svg
-                      className={`h-6 w-6 transform ${selectedFaq === index ? 'rotate-180' : 'rotate-0'} text-primary-500`}
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </span>
-                </button>
-                
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{
-                    height: selectedFaq === index ? 'auto' : 0,
-                    opacity: selectedFaq === index ? 1 : 0
-                  }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <p className="mt-4 text-gray-600">{faq.answer}</p>
-                </motion.div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+            {packages.map((pkg, index) => (
+              <PricingCard key={pkg.id} package={pkg} index={index} />
             ))}
           </div>
           
-          <div className="text-center mt-12">
-            <p className="text-gray-600">
-              Still have questions? Feel free to{' '}
-              <a href="/contact" className="text-primary-600 font-medium hover:text-primary-500">
-                contact us
-              </a>
-              .
+          <div className="mt-16 text-center">
+            <p className="text-lg text-gray-600 mb-6">
+              Need a custom package? We can create a tailored solution just for you.
             </p>
+            <Link to="/contact" className="btn btn-secondary">
+              Request Custom Quote
+            </Link>
+          </div>
+        </div>
+      </section>
+      
+      {/* Additional Services */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <SectionTitle
+            title="Additional Services"
+            subtitle="Enhance your photography experience with these add-on services"
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            {[
+              {
+                title: 'Professional Retouching',
+                price: '$75',
+                description: 'Advanced retouching for 10 selected images, including skin smoothing, blemish removal, and color enhancement.',
+                icon: (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                )
+              },
+              {
+                title: 'Premium Photo Album',
+                price: '$199',
+                description: 'Beautifully designed 20-page hardcover photo album with your favorite images from the session.',
+                icon: (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                )
+              },
+              {
+                title: 'Same-Day Editing',
+                price: '$150',
+                description: 'Expedited editing of 15 selected images delivered within 24 hours of your photoshoot.',
+                icon: (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )
+              }
+            ].map((service, index) => (
+              <div key={service.title} className="bg-white rounded-lg shadow-md p-6">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mb-4">
+                  {service.icon}
+                </div>
+                <h3 className="text-xl font-bold mb-2">{service.title}</h3>
+                <p className="text-primary-600 font-bold text-2xl mb-4">{service.price}</p>
+                <p className="text-gray-600 mb-6">{service.description}</p>
+                <Link to="/contact" className="text-primary-600 font-medium inline-flex items-center hover:text-primary-700">
+                  Learn More
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* Pricing FAQ */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <SectionTitle
+            title="Pricing FAQ"
+            subtitle="Common questions about our pricing and packages"
+          />
+          
+          <div className="mt-12 max-w-3xl mx-auto">
+            <div className="space-y-8">
+              {[
+                {
+                  question: 'Do you require a deposit?',
+                  answer: 'Yes, we require a 50% non-refundable deposit to secure your booking date. The remaining balance is due on the day of the photoshoot.'
+                },
+                {
+                  question: 'What forms of payment do you accept?',
+                  answer: 'We accept credit/debit cards, PayPal, Venmo, Cash App, and cash payments.'
+                },
+                {
+                  question: 'Are there any additional fees I should be aware of?',
+                  answer: 'Our packages are all-inclusive with no hidden fees. For locations more than 30 miles from Houston, there may be a small travel fee which will be discussed during consultation.'
+                },
+                {
+                  question: 'Do you offer discounts for multiple sessions?',
+                  answer: 'Yes, we offer loyalty discounts for returning clients and package deals for multiple sessions booked at once. Contact us for details.'
+                },
+                {
+                  question: 'What is your cancellation policy?',
+                  answer: 'Cancellations made more than 48 hours before your session can be rescheduled at no additional cost. Cancellations within 48 hours may forfeit the deposit, though we try to be flexible with emergencies.'
+                }
+              ].map((item, index) => (
+                <div key={index} className="border-b border-gray-200 pb-6">
+                  <h3 className="text-lg font-bold mb-2">{item.question}</h3>
+                  <p className="text-gray-600">{item.answer}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
       
       {/* CTA Section */}
-      <section className="py-20 bg-primary-600 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <svg className="absolute left-0 bottom-0 transform -translate-x-1/2" width="800" height="800" fill="none" viewBox="0 0 800 800">
-            <circle cx="400" cy="400" r="400" fill="white" fillOpacity="0.1" />
-            <circle cx="400" cy="400" r="300" fill="white" fillOpacity="0.1" />
-            <circle cx="400" cy="400" r="200" fill="white" fillOpacity="0.1" />
-          </svg>
-          <svg className="absolute right-0 top-0 transform translate-x-1/2" width="800" height="800" fill="none" viewBox="0 0 800 800">
-            <circle cx="400" cy="400" r="400" fill="white" fillOpacity="0.1" />
-            <circle cx="400" cy="400" r="300" fill="white" fillOpacity="0.1" />
-            <circle cx="400" cy="400" r="200" fill="white" fillOpacity="0.1" />
-          </svg>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-serif">
-              Ready to book your session?
-            </h2>
-            <p className="mt-4 text-xl text-primary-100 max-w-3xl mx-auto">
-              Contact us today to secure your preferred date and start planning your perfect photo session.
-            </p>
-            <div className="mt-8 flex justify-center">
-              <a
-                href="/contact"
-                className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-white hover:bg-primary-50 shadow-lg"
-              >
-                Book Now
-              </a>
-            </div>
-          </div>
+      <section className="py-16 bg-primary-600 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to book your session?</h2>
+          <p className="text-xl mb-8 max-w-3xl mx-auto">
+            Choose your package and book your photography session today.
+          </p>
+          <Link to="/booking" className="btn bg-white text-primary-600 hover:bg-gray-100">
+            Book Now
+          </Link>
         </div>
       </section>
-    </div>
+    </PageTransition>
   )
 }
 
