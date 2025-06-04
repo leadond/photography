@@ -32,7 +32,7 @@ const AboutPage = () => {
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={storyInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.6, ease: [0.6, 0.05, 0.01, 0.9] }}
             >
               <h2 className="text-3xl font-bold mb-6">Our Story</h2>
               <p className="text-lg text-gray-600 mb-6">
@@ -52,7 +52,7 @@ const AboutPage = () => {
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               animate={storyInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
               className="relative"
             >
               <img 
@@ -88,7 +88,7 @@ const AboutPage = () => {
                 key={stat.label}
                 initial={{ opacity: 0, y: 30 }}
                 animate={statsInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.5, delay: index * 0.1, ease: "easeOut" }}
                 className="bg-white rounded-lg shadow-md p-8 text-center"
               >
                 <p className="text-4xl font-bold text-primary-600 mb-2">{stat.number}</p>
@@ -148,7 +148,7 @@ const AboutPage = () => {
                   ref={ref}
                   initial={{ opacity: 0, y: 30 }}
                   animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1, ease: "easeOut" }}
                   className="bg-white rounded-lg shadow-md p-8"
                 >
                   <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mb-6 mx-auto">

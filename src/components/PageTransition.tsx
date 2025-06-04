@@ -5,13 +5,35 @@ interface PageTransitionProps {
   children: ReactNode
 }
 
-const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
+const PageTransition = ({ children }: PageTransitionProps) => {
+  const pageVariants = {
+    initial: {
+      opacity: 0,
+      y: 20
+    },
+    in: {
+      opacity: 1,
+      y: 0
+    },
+    out: {
+      opacity: 0,
+      y: -20
+    }
+  }
+
+  const pageTransition = {
+    type: 'tween',
+    ease: 'easeInOut',
+    duration: 0.4
+  }
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.3 }}
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={pageTransition}
     >
       {children}
     </motion.div>

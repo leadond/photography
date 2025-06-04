@@ -1,106 +1,62 @@
-import { Routes, Route } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
-import HomePage from './pages/HomePage'
-import AboutPage from './pages/AboutPage'
-import ServicesPage from './pages/ServicesPage'
-import GalleryPage from './pages/GalleryPage'
-import ContactPage from './pages/ContactPage'
-import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
-import ForgotPasswordPage from './pages/ForgotPasswordPage'
-import ResetPasswordPage from './pages/ResetPasswordPage'
-import DashboardPage from './pages/DashboardPage'
-import MyBookingsPage from './pages/MyBookingsPage'
-import MyAlbumsPage from './pages/MyAlbumsPage'
-import AlbumDetailPage from './pages/AlbumDetailPage'
-import BookingPage from './pages/BookingPage'
-import AdminDashboardPage from './pages/AdminDashboardPage'
-import AdminAlbumsPage from './pages/AdminAlbumsPage'
-import AdminAlbumDetailPage from './pages/AdminAlbumDetailPage'
-import ProtectedRoute from './components/ProtectedRoute'
-import AdminRoute from './components/AdminRoute'
-import AdminLayout from './layouts/AdminLayout'
-import MainLayout from './layouts/MainLayout'
-import './App.css'
+import { lazy, Suspense } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+import MainLayout from "./layouts/MainLayout";
+import LoadingSpinner from "./components/LoadingSpinner";
+
+// Lazy load pages for better performance
+const HomePage = lazy(() => import("./pages/HomePage"));
+const GalleryPage = lazy(() => import("./pages/GalleryPage"));
+const ServicesPage = lazy(() => import("./pages/ServicesPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const BookingPage = lazy(() => import("./pages/BookingPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 function App() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Protected route component
+  const ProtectedRoute = ({ children }) => {
+    if (isLoading) return <LoadingSpinner fullScreen />;
+    return isAuthenticated ? children : <Navigate to="/login" />;
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <Toaster position="top-right" />
+    <Suspense fallback={<LoadingSpinner fullScreen />}>
       <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/portfolio" element={<GalleryPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          
-          {/* Protected User Routes */}
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="gallery" element={<GalleryPage />} />
+          <Route path="services" element={<ServicesPage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="contact" element={<ContactPage />} />
           <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-bookings" 
-            element={
-              <ProtectedRoute>
-                <MyBookingsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-albums" 
-            element={
-              <ProtectedRoute>
-                <MyAlbumsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-albums/:albumId" 
-            element={
-              <ProtectedRoute>
-                <AlbumDetailPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/booking" 
+            path="booking" 
             element={
               <ProtectedRoute>
                 <BookingPage />
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
-        
-        {/* Admin Routes */}
-        <Route 
-          path="/admin/*" 
-          element={
-            <AdminRoute>
-              <AdminLayout>
-                <Routes>
-                  <Route path="/" element={<AdminDashboardPage />} />
-                  <Route path="/albums" element={<AdminAlbumsPage />} />
-                  <Route path="/albums/:albumId" element={<AdminAlbumDetailPage />} />
-                  {/* Add other admin routes here */}
-                </Routes>
-              </AdminLayout>
-            </AdminRoute>
-          } 
-        />
       </Routes>
-    </div>
-  )
+    </Suspense>
+  );
 }
 
-export default App
+export default App;

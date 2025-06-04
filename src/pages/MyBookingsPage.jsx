@@ -1,274 +1,258 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
-import { motion } from 'framer-motion'
-import toast from 'react-hot-toast'
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { useAuth } from '../context/AuthContext';
+import { useBooking } from '../context/BookingContext';
+import LoadingSpinner from '../components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
-function MyBookingsPage() {
-  const { user } = useAuth()
-  const [appointments, setAppointments] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('upcoming')
+const MyBookingsPage = () => {
+  const { user } = useAuth();
+  const { bookings, isLoading, error, fetchUserBookings, cancelBooking } = useBooking();
+  const [activeTab, setActiveTab] = useState('upcoming');
 
+  // Fetch user bookings
   useEffect(() => {
-    fetchAppointments()
-  }, [user])
-
-  const fetchAppointments = async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          *,
-          packages (name, price, image_url, duration)
-        `)
-        .eq('user_id', user.id)
-        .order('date', { ascending: true })
-
-      if (error) throw error
-      setAppointments(data || [])
-    } catch (error) {
-      console.error('Error fetching appointments:', error)
-      toast.error('Failed to load your appointments')
-    } finally {
-      setLoading(false)
+    if (user) {
+      fetchUserBookings();
     }
-  }
+  }, [user, fetchUserBookings]);
 
-  const cancelAppointment = async (id) => {
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'cancelled' })
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .single()
-
-      if (error) throw error
-      
-      toast.success('Appointment cancelled successfully')
-      fetchAppointments()
-    } catch (error) {
-      console.error('Error cancelling appointment:', error)
-      toast.error('Failed to cancel appointment')
-    }
-  }
-
-  const formatDate = (dateString) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-    return new Date(dateString).toLocaleDateString(undefined, options)
-  }
-
-  const getFilteredAppointments = () => {
-    const now = new Date()
+  // Filter bookings based on active tab
+  const filteredBookings = bookings.filter(booking => {
+    const bookingDate = new Date(booking.date);
+    const today = new Date();
     
     if (activeTab === 'upcoming') {
-      return appointments.filter(
-        appointment => 
-          new Date(appointment.date) >= now && 
-          appointment.status !== 'cancelled'
-      )
+      return bookingDate >= today && booking.status !== 'Cancelled';
     } else if (activeTab === 'past') {
-      return appointments.filter(
-        appointment => 
-          new Date(appointment.date) < now || 
-          appointment.status === 'completed'
-      )
+      return bookingDate < today || booking.status === 'Completed';
     } else if (activeTab === 'cancelled') {
-      return appointments.filter(
-        appointment => appointment.status === 'cancelled'
-      )
+      return booking.status === 'Cancelled';
     }
-    
-    return appointments
-  }
+    return true;
+  });
 
-  const filteredAppointments = getFilteredAppointments()
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-      </div>
-    )
-  }
+  // Handle booking cancellation
+  const handleCancelBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
+      try {
+        await cancelBooking(bookingId);
+        toast.success('Booking cancelled successfully');
+      } catch (error) {
+        toast.error(error.message || 'Failed to cancel booking');
+      }
+    }
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="py-6"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-900">My Bookings</h1>
-          <Link
-            to="/booking"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            Book New Session
-          </Link>
+    <div className="min-h-screen pt-16 pb-20">
+      {/* Header */}
+      <div className="bg-gray-900 text-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">My Bookings</h1>
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            Manage your photography session bookings and appointments.
+          </p>
         </div>
-        
-        {/* Tabs */}
-        <div className="mt-4 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('upcoming')}
-              className={`${
-                activeTab === 'upcoming'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-            >
-              Upcoming
-            </button>
-            <button
-              onClick={() => setActiveTab('past')}
-              className={`${
-                activeTab === 'past'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-            >
-              Past
-            </button>
-            <button
-              onClick={() => setActiveTab('cancelled')}
-              className={`${
-                activeTab === 'cancelled'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-            >
-              Cancelled
-            </button>
-          </nav>
-        </div>
-        
-        {/* Appointments list */}
-        <div className="mt-6">
-          {filteredAppointments.length > 0 ? (
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <ul className="divide-y divide-gray-200">
-                {filteredAppointments.map((appointment) => (
-                  <li key={appointment.id}>
-                    <div className="px-4 py-5 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center">
-                            {appointment.packages?.image_url ? (
-                              <img 
-                                src={appointment.packages.image_url} 
-                                alt={appointment.packages.name} 
-                                className="h-16 w-16 rounded-md object-cover"
-                              />
-                            ) : (
-                              <i className="fas fa-camera text-2xl text-gray-500"></i>
-                            )}
-                          </div>
-                          <div className="ml-4">
-                            <h3 className="text-lg font-medium text-gray-900">{appointment.packages?.name || 'Photography Session'}</h3>
-                            <p className="text-sm text-gray-500">
-                              {formatDate(appointment.date)} at {appointment.time}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="ml-2 flex-shrink-0 flex">
-                          <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            appointment.status === 'completed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : appointment.status === 'cancelled' 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 sm:flex sm:justify-between">
-                        <div className="sm:flex sm:space-x-6">
-                          <p className="flex items-center text-sm text-gray-500">
-                            <i className="fas fa-map-marker-alt flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"></i>
-                            {appointment.location}
-                          </p>
-                          <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <i className="fas fa-clock flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"></i>
-                            {appointment.packages?.duration || '1'} hour
-                          </p>
-                        </div>
-                        <div className="mt-4 sm:mt-0">
-                          <div className="flex items-center justify-end space-x-4">
-                            <p className="text-sm font-medium text-gray-900">
-                              ${appointment.packages?.price || '0'} · 
-                              <span className={`ml-1 ${
-                                appointment.payment_status === 'paid' 
-                                  ? 'text-green-600' 
-                                  : 'text-red-600'
-                              }`}>
-                                {appointment.payment_status.charAt(0).toUpperCase() + appointment.payment_status.slice(1)}
-                              </span>
-                            </p>
-                            
-                            {activeTab === 'upcoming' && appointment.status !== 'cancelled' && (
-                              <button
-                                onClick={() => {
-                                  if (window.confirm('Are you sure you want to cancel this appointment?')) {
-                                    cancelAppointment(appointment.id)
-                                  }
-                                }}
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                              >
-                                Cancel
-                              </button>
-                            )}
-                            
-                            {appointment.status === 'completed' && (
-                              <Link
-                                to={`/my-albums`}
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                              >
-                                View Photos
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+      </div>
+
+      {/* Bookings Content */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            {/* Tabs */}
+            <div className="flex border-b border-gray-200 mb-8">
+              <TabButton 
+                label="Upcoming" 
+                isActive={activeTab === 'upcoming'} 
+                onClick={() => setActiveTab('upcoming')}
+              />
+              <TabButton 
+                label="Past" 
+                isActive={activeTab === 'past'} 
+                onClick={() => setActiveTab('past')}
+              />
+              <TabButton 
+                label="Cancelled" 
+                isActive={activeTab === 'cancelled'} 
+                onClick={() => setActiveTab('cancelled')}
+              />
             </div>
-          ) : (
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6 text-center">
-                <p className="text-gray-500">
-                  {activeTab === 'upcoming' 
-                    ? "You don't have any upcoming appointments." 
-                    : activeTab === 'past' 
-                    ? "You don't have any past appointments." 
-                    : "You don't have any cancelled appointments."}
-                </p>
-                {activeTab === 'upcoming' && (
-                  <Link
-                    to="/booking"
-                    className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  >
-                    Book a Session
-                  </Link>
-                )}
+
+            {/* Bookings List */}
+            {isLoading ? (
+              <LoadingSpinner />
+            ) : error ? (
+              <div className="text-center">
+                <p className="text-red-500 mb-4">{error}</p>
+                <button 
+                  onClick={() => fetchUserBookings()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  Try Again
+                </button>
               </div>
+            ) : filteredBookings.length === 0 ? (
+              <EmptyState activeTab={activeTab} />
+            ) : (
+              <div className="space-y-6">
+                {filteredBookings.map((booking, index) => (
+                  <BookingCard 
+                    key={booking.id} 
+                    booking={booking} 
+                    index={index}
+                    onCancel={() => handleCancelBooking(booking.id)}
+                    showCancelButton={activeTab === 'upcoming'}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Book New Session Button */}
+            <div className="text-center mt-12">
+              <Link 
+                to="/booking" 
+                className="px-6 py-3 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-600 transition-colors inline-block"
+              >
+                Book New Session
+              </Link>
             </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+// Tab Button Component
+const TabButton = ({ label, isActive, onClick }) => (
+  <button
+    className={`px-6 py-3 font-medium text-sm transition-colors ${
+      isActive 
+        ? 'text-blue-500 border-b-2 border-blue-500' 
+        : 'text-gray-500 hover:text-gray-700'
+    }`}
+    onClick={onClick}
+  >
+    {label}
+  </button>
+);
+
+// Empty State Component
+const EmptyState = ({ activeTab }) => {
+  let message = '';
+  
+  switch (activeTab) {
+    case 'upcoming':
+      message = "You don't have any upcoming bookings.";
+      break;
+    case 'past':
+      message = "You don't have any past bookings.";
+      break;
+    case 'cancelled':
+      message = "You don't have any cancelled bookings.";
+      break;
+    default:
+      message = "No bookings found.";
+  }
+  
+  return (
+    <div className="text-center py-12">
+      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">No Bookings</h2>
+      <p className="text-gray-600 mb-6">
+        {message}
+      </p>
+      {activeTab === 'upcoming' && (
+        <Link 
+          to="/booking" 
+          className="px-6 py-3 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-600 transition-colors inline-block"
+        >
+          Book a Session
+        </Link>
+      )}
+    </div>
+  );
+};
+
+// Booking Card Component
+const BookingCard = ({ booking, index, onCancel, showCancelButton }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Determine status color
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-green-100 text-green-800';
+      case 'Upcoming':
+        return 'bg-blue-100 text-blue-800';
+      case 'Cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="border border-gray-200 rounded-lg overflow-hidden shadow-sm"
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+    >
+      <div className="p-6">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+          <div>
+            <div className="flex items-center mb-2">
+              <h3 className="text-xl font-semibold text-gray-900 mr-3">{booking.service}</h3>
+              <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
+                {booking.status}
+              </span>
+            </div>
+            <p className="text-gray-600 mb-1">
+              <strong>Date:</strong> {formatDate(booking.date)}
+            </p>
+            <p className="text-gray-600 mb-1">
+              <strong>Time:</strong> {booking.time}
+            </p>
+            <p className="text-gray-600 mb-1">
+              <strong>Location:</strong> {booking.location}
+            </p>
+            {booking.notes && (
+              <p className="text-gray-600 mt-3 pt-3 border-t border-gray-100">
+                <strong>Notes:</strong> {booking.notes}
+              </p>
+            )}
+          </div>
+          
+          {showCancelButton && booking.status !== 'Cancelled' && (
+            <button 
+              onClick={onCancel}
+              className="px-4 py-2 border border-red-500 text-red-500 rounded-md hover:bg-red-50 transition-colors self-start"
+            >
+              Cancel Booking
+            </button>
           )}
         </div>
       </div>
     </motion.div>
-  )
-}
+  );
+};
 
-export default MyBookingsPage
+export default MyBookingsPage;

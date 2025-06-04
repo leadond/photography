@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -10,91 +10,128 @@ function AlbumDetailPage() {
   const { user } = useAuth()
   const [album, setAlbum] = useState(null)
   const [photos, setPhotos] = useState([])
-  const [loading, setLoading] = useState(true)
   const [selectedPhoto, setSelectedPhoto] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [favorites, setFavorites] = useState([])
 
   useEffect(() => {
-    fetchAlbumDetails()
-  }, [albumId, user])
+    const fetchAlbumData = async () => {
+      setIsLoading(true)
+      try {
+        // Fetch album details
+        const { data: albumData, error: albumError } = await supabase
+          .from('albums')
+          .select('*')
+          .eq('id', albumId)
+          .eq('user_id', user.id)
+          .single()
 
-  const fetchAlbumDetails = async () => {
+        if (albumError) throw albumError
+        setAlbum(albumData)
+
+        // Fetch photos in the album
+        const { data: photosData, error: photosError } = await supabase
+          .from('photos')
+          .select('*')
+          .eq('album_id', albumId)
+          .order('created_at', { ascending: true })
+
+        if (photosError) throw photosError
+        setPhotos(photosData || [])
+
+        // Fetch user's favorites
+        const { data: favoritesData, error: favoritesError } = await supabase
+          .from('favorites')
+          .select('photo_id')
+          .eq('user_id', user.id)
+          .eq('album_id', albumId)
+
+        if (favoritesError) throw favoritesError
+        setFavorites(favoritesData.map(fav => fav.photo_id) || [])
+      } catch (error) {
+        console.error('Error fetching album data:', error)
+        setError('Failed to load album data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (user && albumId) {
+      fetchAlbumData()
+    }
+  }, [user, albumId])
+
+  const toggleFavorite = async (photoId) => {
     try {
-      setLoading(true)
+      const isFavorite = favorites.includes(photoId)
       
-      // Fetch album details
-      const { data: albumData, error: albumError } = await supabase
-        .from('albums')
-        .select('*')
-        .eq('id', albumId)
-        .eq('user_id', user.id)
-        .single()
-
-      if (albumError) throw albumError
-      setAlbum(albumData)
-
-      // Fetch photos in the album
-      const { data: photosData, error: photosError } = await supabase
-        .from('photos')
-        .select('*')
-        .eq('album_id', albumId)
-        .order('created_at', { ascending: true })
-
-      if (photosError) throw photosError
-      setPhotos(photosData || [])
+      if (isFavorite) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('photo_id', photoId)
+          .eq('album_id', albumId)
+          
+        if (error) throw error
+        
+        setFavorites(favorites.filter(id => id !== photoId))
+        toast.success('Removed from favorites')
+      } else {
+        // Add to favorites
+        const { error } = await supabase
+          .from('favorites')
+          .insert([
+            { 
+              user_id: user.id, 
+              photo_id: photoId,
+              album_id: albumId
+            }
+          ])
+          
+        if (error) throw error
+        
+        setFavorites([...favorites, photoId])
+        toast.success('Added to favorites')
+      }
     } catch (error) {
-      console.error('Error fetching album details:', error)
-      toast.error('Failed to load album details')
-    } finally {
-      setLoading(false)
+      console.error('Error updating favorites:', error)
+      toast.error('Failed to update favorites')
     }
   }
 
-  const openPhotoModal = (photo) => {
-    setSelectedPhoto(photo)
-  }
-
-  const closePhotoModal = () => {
-    setSelectedPhoto(null)
-  }
-
-  const downloadPhoto = (photo) => {
-    // Create a temporary link to download the photo
+  const downloadPhoto = (url, filename) => {
+    // Create a temporary link element
     const link = document.createElement('a')
-    link.href = photo.url
-    link.download = photo.filename || 'photo.jpg'
+    link.href = url
+    link.download = filename || 'photo.jpg'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    
+    toast.success('Download started')
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
       </div>
     )
   }
 
-  if (!album) {
+  if (error || !album) {
     return (
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <div className="px-4 py-5 sm:p-6 text-center">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Album not found</h3>
-              <p className="mt-2 text-sm text-gray-500">
-                The album you're looking for doesn't exist or you don't have permission to view it.
-              </p>
-              <div className="mt-6">
-                <Link
-                  to="/my-albums"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                >
-                  Back to Albums
-                </Link>
-              </div>
-            </div>
+      <div className="py-12">
+        <div className="container mx-auto px-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            {error || 'Album not found or you do not have access to this album.'}
           </div>
+          <Link to="/my-albums" className="text-amber-500 hover:text-amber-600">
+            &larr; Back to My Albums
+          </Link>
         </div>
       </div>
     )
@@ -106,123 +143,149 @@ function AlbumDetailPage() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="py-6"
+      className="py-12"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">{album.title}</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {new Date(album.created_at).toLocaleDateString()} • {photos.length} photos
-            </p>
+      <div className="container mx-auto px-4">
+        <div className="mb-8">
+          <Link to="/my-albums" className="text-amber-500 hover:text-amber-600 mb-4 inline-block">
+            &larr; Back to My Albums
+          </Link>
+          <h1 className="text-3xl font-serif font-bold">{album.title}</h1>
+          <p className="text-gray-600 mt-2">
+            {new Date(album.created_at).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </p>
+          {album.description && (
+            <p className="text-gray-700 mt-4">{album.description}</p>
+          )}
+        </div>
+
+        {/* Album Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+                <i className="fas fa-images text-amber-500"></i>
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">Total Photos</p>
+                <p className="text-xl font-medium">{photos.length}</p>
+              </div>
+            </div>
           </div>
-          <div className="flex space-x-3">
-            <Link
-              to="/my-albums"
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              Back to Albums
-            </Link>
-            {album.download_url && (
-              <a
-                href={album.download_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
-                Download All
-              </a>
-            )}
+          
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+                <i className="fas fa-heart text-amber-500"></i>
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">Favorites</p>
+                <p className="text-xl font-medium">{favorites.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+                <i className="fas fa-download text-amber-500"></i>
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">Downloads Available</p>
+                <p className="text-xl font-medium">{album.download_limit || 'Unlimited'}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {album.description && (
-          <div className="mt-4 bg-white shadow overflow-hidden sm:rounded-md">
-            <div className="px-4 py-5 sm:p-6">
-              <p className="text-gray-700">{album.description}</p>
+        {/* Photo Gallery */}
+        {photos.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {photos.map((photo) => (
+              <div 
+                key={photo.id} 
+                className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition"
+                onClick={() => setSelectedPhoto(photo)}
+              >
+                <div className="relative h-64">
+                  <img 
+                    src={photo.thumbnail_url || photo.url} 
+                    alt={photo.caption || 'Photo'} 
+                    className="w-full h-full object-cover"
+                  />
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleFavorite(photo.id)
+                    }}
+                    className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition"
+                  >
+                    <i className={`${favorites.includes(photo.id) ? 'fas' : 'far'} fa-heart ${favorites.includes(photo.id) ? 'text-red-500' : 'text-gray-600'}`}></i>
+                  </button>
+                </div>
+                {photo.caption && (
+                  <div className="p-3">
+                    <p className="text-gray-700">{photo.caption}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-gray-50 p-8 rounded-lg text-center">
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-images text-gray-400 text-xl"></i>
             </div>
+            <h3 className="text-lg font-medium mb-2">No Photos Available</h3>
+            <p className="text-gray-600">This album doesn't have any photos yet. Check back later.</p>
           </div>
         )}
 
-        <div className="mt-6">
-          {photos.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {photos.map((photo) => (
-                <div 
-                  key={photo.id} 
-                  className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md"
-                  onClick={() => openPhotoModal(photo)}
-                >
-                  <div className="aspect-w-1 aspect-h-1 bg-gray-200">
-                    <img 
-                      src={photo.url} 
-                      alt={photo.caption || 'Photo'} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity duration-200 flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button className="text-white">
-                        <i className="fas fa-search-plus text-xl"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:p-6 text-center">
-                <p className="text-gray-500">No photos available in this album yet.</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Photo Modal */}
-      {selectedPhoto && (
-        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-900 bg-opacity-90 transition-opacity" onClick={closePhotoModal}></div>
-
-            <div className="inline-block align-bottom bg-transparent rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
-              <div className="relative">
+        {/* Photo Modal */}
+        {selectedPhoto && (
+          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div className="relative max-w-5xl w-full bg-white rounded-lg overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h3 className="text-lg font-medium">{selectedPhoto.caption || 'Photo'}</h3>
                 <button 
-                  onClick={closePhotoModal}
-                  className="absolute top-4 right-4 text-white hover:text-gray-300 focus:outline-none z-10"
+                  onClick={() => setSelectedPhoto(null)}
+                  className="text-gray-500 hover:text-gray-700"
                 >
-                  <i className="fas fa-times text-2xl"></i>
+                  <i className="fas fa-times"></i>
                 </button>
-                
-                <div className="flex justify-center items-center">
-                  <img 
-                    src={selectedPhoto.url} 
-                    alt={selectedPhoto.caption || 'Photo'} 
-                    className="max-h-[80vh] max-w-full object-contain"
-                  />
+              </div>
+              <div className="p-4 bg-gray-100 flex justify-center">
+                <img 
+                  src={selectedPhoto.url} 
+                  alt={selectedPhoto.caption || 'Photo'} 
+                  className="max-h-[70vh] object-contain"
+                />
+              </div>
+              <div className="p-4 flex justify-between items-center">
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={() => toggleFavorite(selectedPhoto.id)}
+                    className="px-4 py-2 flex items-center rounded-md hover:bg-gray-100 transition"
+                  >
+                    <i className={`${favorites.includes(selectedPhoto.id) ? 'fas' : 'far'} fa-heart mr-2 ${favorites.includes(selectedPhoto.id) ? 'text-red-500' : 'text-gray-600'}`}></i>
+                    {favorites.includes(selectedPhoto.id) ? 'Favorited' : 'Add to Favorites'}
+                  </button>
                 </div>
-                
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      {selectedPhoto.caption && (
-                        <p className="text-sm">{selectedPhoto.caption}</p>
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => downloadPhoto(selectedPhoto)}
-                      className="bg-primary-600 hover:bg-primary-700 text-white py-1 px-3 rounded text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                    >
-                      <i className="fas fa-download mr-1"></i> Download
-                    </button>
-                  </div>
-                </div>
+                <button 
+                  onClick={() => downloadPhoto(selectedPhoto.url, selectedPhoto.filename || 'photo.jpg')}
+                  className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition flex items-center"
+                >
+                  <i className="fas fa-download mr-2"></i> Download
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </motion.div>
   )
 }

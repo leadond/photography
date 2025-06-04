@@ -1,369 +1,398 @@
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { useOutletContext } from 'react-router-dom'
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 
-function PricingPage() {
-  const { toggleModal } = useOutletContext()
-
-  const packages = [
-    {
-      id: 'basic',
-      name: 'Basic Session',
-      price: 199,
-      popular: false,
-      features: [
-        '1-hour photo session',
-        '1 location',
-        '10 professionally edited digital images',
-        'Online gallery access for 30 days',
-        'Print release for personal use'
-      ],
-      color: 'primary'
-    },
-    {
-      id: 'premium',
-      name: 'Premium Session',
-      price: 349,
-      popular: true,
-      features: [
-        '2-hour photo session',
-        'Up to 2 locations',
-        '25 professionally edited digital images',
-        'Online gallery access for 60 days',
-        'Print release for personal use',
-        '1 outfit change'
-      ],
-      color: 'accent'
-    },
-    {
-      id: 'deluxe',
-      name: 'Deluxe Session',
-      price: 599,
-      popular: false,
-      features: [
-        '4-hour photo session',
-        'Multiple locations',
-        '50 professionally edited digital images',
-        'Online gallery access for 90 days',
-        'Print release for personal use',
-        'Multiple outfit changes',
-        'Professional hair & makeup consultation'
-      ],
-      color: 'primary'
-    }
-  ]
-
-  const eventPricing = [
-    {
-      event: 'Corporate Event',
-      duration: '4 hours',
-      price: 799,
-      details: 'Full coverage, edited images, online gallery'
-    },
-    {
-      event: 'Prom Photography',
-      duration: '3 hours',
-      price: 599,
-      details: 'Group & individual photos, edited images'
-    },
-    {
-      event: 'Graduation Ceremony',
-      duration: '3 hours',
-      price: 649,
-      details: 'Ceremony coverage, formal portraits'
-    },
-    {
-      event: 'Private Party',
-      duration: '4 hours',
-      price: 699,
-      details: 'Event coverage, candid & group photos'
-    }
-  ]
+const PricingPage = () => {
+  const [billingCycle, setBillingCycle] = useState('monthly');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      {/* Hero Section */}
-      <section className="bg-primary text-white py-20">
+    <div className="min-h-screen pt-16 pb-20">
+      {/* Header */}
+      <div className="bg-gray-900 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Our Pricing</h1>
-          <p className="text-xl max-w-3xl mx-auto">Competitive rates for professional photography services in Houston, TX.</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">Our Pricing Plans</h1>
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            Choose the perfect photography package that fits your needs and budget.
+          </p>
+        </div>
+      </div>
+
+      {/* Pricing Content */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          {/* Category Filter */}
+          <div className="flex flex-wrap justify-center gap-2 mb-12">
+            <CategoryButton 
+              label="All Services" 
+              isActive={selectedCategory === 'all'} 
+              onClick={() => setSelectedCategory('all')}
+            />
+            <CategoryButton 
+              label="Wedding" 
+              isActive={selectedCategory === 'wedding'} 
+              onClick={() => setSelectedCategory('wedding')}
+            />
+            <CategoryButton 
+              label="Portrait" 
+              isActive={selectedCategory === 'portrait'} 
+              onClick={() => setSelectedCategory('portrait')}
+            />
+            <CategoryButton 
+              label="Event" 
+              isActive={selectedCategory === 'event'} 
+              onClick={() => setSelectedCategory('event')}
+            />
+            <CategoryButton 
+              label="Commercial" 
+              isActive={selectedCategory === 'commercial'} 
+              onClick={() => setSelectedCategory('commercial')}
+            />
+          </div>
+
+          {/* Billing Toggle */}
+          <div className="flex justify-center items-center mb-12">
+            <span className={`mr-3 ${billingCycle === 'monthly' ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+              Monthly
+            </span>
+            <div 
+              className="relative w-14 h-8 bg-gray-200 rounded-full cursor-pointer"
+              onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')}
+            >
+              <div 
+                className={`absolute top-1 w-6 h-6 rounded-full bg-blue-500 transition-all duration-300 ${
+                  billingCycle === 'yearly' ? 'left-7' : 'left-1'
+                }`}
+              ></div>
+            </div>
+            <span className={`ml-3 ${billingCycle === 'yearly' ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+              Yearly <span className="text-green-500 text-sm font-medium">Save 20%</span>
+            </span>
+          </div>
+
+          {/* Pricing Plans */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {pricingPlans
+              .filter(plan => selectedCategory === 'all' || plan.category === selectedCategory)
+              .map((plan, index) => (
+                <PricingCard 
+                  key={plan.id} 
+                  plan={plan} 
+                  index={index}
+                  billingCycle={billingCycle}
+                />
+              ))}
+          </div>
+
+          {/* No Plans Message */}
+          {pricingPlans.filter(plan => selectedCategory === 'all' || plan.category === selectedCategory).length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No pricing plans available for this category.</p>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Pricing Packages */}
-      <section className="py-16">
+      {/* FAQ Section */}
+      <section className="py-20 bg-gray-100">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-serif font-bold text-center mb-12">Photography Packages</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {packages.map(pkg => (
-              <div 
-                key={pkg.id}
-                className={`bg-gray-50 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition ${pkg.popular ? 'transform scale-105 z-10' : ''}`}
-              >
-                <div className={`bg-${pkg.color} text-white p-6 text-center relative`}>
-                  {pkg.popular && (
-                    <div className="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 rounded-bl">Most Popular</div>
-                  )}
-                  <h3 className="text-2xl font-medium">{pkg.name}</h3>
-                  <div className="text-3xl font-bold mt-2">${pkg.price}</div>
-                </div>
-                <div className="p-6">
-                  <ul className="space-y-3 mb-6">
-                    {pkg.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <i className="fas fa-check text-accent mt-1 mr-2"></i>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button 
-                    onClick={() => toggleModal('bookingModal', true)}
-                    className={`w-full py-3 bg-${pkg.color} text-white rounded hover:bg-${pkg.color === 'primary' ? 'gray-800' : 'amber-600'} transition`}
-                  >
-                    Book Now
-                  </button>
-                </div>
-              </div>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Find answers to common questions about our pricing and packages.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            {faqs.map((faq, index) => (
+              <FaqItem key={index} faq={faq} index={index} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Event Pricing */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-serif font-bold text-center mb-8">Event Photography Pricing</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-              <thead className="bg-primary text-white">
-                <tr>
-                  <th className="py-4 px-6 text-left">Event Type</th>
-                  <th className="py-4 px-6 text-left">Duration</th>
-                  <th className="py-4 px-6 text-left">Price</th>
-                  <th className="py-4 px-6 text-left">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {eventPricing.map((item, index) => (
-                  <tr key={index} className={`${index !== eventPricing.length - 1 ? 'border-b border-gray-200' : ''} hover:bg-gray-100`}>
-                    <td className="py-4 px-6">{item.event}</td>
-                    <td className="py-4 px-6">{item.duration}</td>
-                    <td className="py-4 px-6">${item.price}</td>
-                    <td className="py-4 px-6">{item.details}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-center mt-8 text-gray-600">Custom packages available upon request. Contact us for specialized pricing.</p>
-        </div>
-      </section>
-
-      {/* Add-ons Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-serif font-bold text-center mb-12">Additional Services</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-                <i className="fas fa-print text-accent"></i>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Print Products</h3>
-              <p className="text-gray-600 mb-4">High-quality prints, canvases, and albums available in various sizes.</p>
-              <ul className="text-gray-600 space-y-2">
-                <li className="flex justify-between">
-                  <span>8x10 Print</span>
-                  <span>$25</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>16x20 Print</span>
-                  <span>$45</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Canvas (16x20)</span>
-                  <span>$120</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Custom Album</span>
-                  <span>From $250</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-                <i className="fas fa-clock text-accent"></i>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Additional Time</h3>
-              <p className="text-gray-600 mb-4">Extend your photography session for more coverage and photos.</p>
-              <ul className="text-gray-600 space-y-2">
-                <li className="flex justify-between">
-                  <span>30 Minutes</span>
-                  <span>$75</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>1 Hour</span>
-                  <span>$125</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>2 Hours</span>
-                  <span>$225</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-                <i className="fas fa-image text-accent"></i>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Additional Edits</h3>
-              <p className="text-gray-600 mb-4">Get more professionally edited images from your session.</p>
-              <ul className="text-gray-600 space-y-2">
-                <li className="flex justify-between">
-                  <span>5 Additional Images</span>
-                  <span>$75</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>10 Additional Images</span>
-                  <span>$125</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>All Images from Session</span>
-                  <span>$250</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-                <i className="fas fa-map-marker-alt text-accent"></i>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Travel Fees</h3>
-              <p className="text-gray-600 mb-4">Additional fees for locations outside of Houston metro area.</p>
-              <ul className="text-gray-600 space-y-2">
-                <li className="flex justify-between">
-                  <span>20-40 miles</span>
-                  <span>$50</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>41-60 miles</span>
-                  <span>$75</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>61+ miles</span>
-                  <span>Custom Quote</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-                <i className="fas fa-paint-brush text-accent"></i>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Hair & Makeup</h3>
-              <p className="text-gray-600 mb-4">Professional styling services for your photo session.</p>
-              <ul className="text-gray-600 space-y-2">
-                <li className="flex justify-between">
-                  <span>Hair Styling</span>
-                  <span>$85</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Makeup Application</span>
-                  <span>$85</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Hair & Makeup Package</span>
-                  <span>$150</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-                <i className="fas fa-bolt text-accent"></i>
-              </div>
-              <h3 className="text-xl font-medium mb-2">Rush Delivery</h3>
-              <p className="text-gray-600 mb-4">Expedited editing and delivery of your photos.</p>
-              <ul className="text-gray-600 space-y-2">
-                <li className="flex justify-between">
-                  <span>3-Day Turnaround</span>
-                  <span>$100</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>5-Day Turnaround</span>
-                  <span>$75</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>7-Day Turnaround</span>
-                  <span>$50</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-serif font-bold text-center mb-12">Frequently Asked Questions</h2>
-          
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">What is your payment policy?</h3>
-              <p className="text-gray-600">A 50% non-refundable retainer is required to secure your booking date, with the remaining balance due on the day of the session. We accept credit cards, PayPal, Venmo, and cash.</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">What is your cancellation policy?</h3>
-              <p className="text-gray-600">The booking retainer is non-refundable. However, if you need to reschedule, we require at least 48 hours notice and will work with you to find a new date within 3 months of the original session date.</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">How long will it take to receive my photos?</h3>
-              <p className="text-gray-600">Standard delivery time is 2-3 weeks for portrait sessions and 3-4 weeks for events. Rush delivery is available for an additional fee.</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">Do you offer mini sessions?</h3>
-              <p className="text-gray-600">Yes, we offer seasonal mini sessions throughout the year. These are typically 20-30 minute sessions with a limited number of edited images. Follow us on social media or join our email list to be notified of upcoming mini session dates.</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">What should I wear to my photo session?</h3>
-              <p className="text-gray-600">After booking, we'll provide you with a detailed guide on what to wear based on your session type. Generally, we recommend solid colors, avoiding large logos or busy patterns, and coordinating (not matching) outfits for group photos.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-16 bg-primary text-white">
+      <section className="py-20 bg-blue-600 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">Ready to Book Your Session?</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">Contact us today to schedule your photography session and capture your special moments.</p>
-          <div className="flex flex-col md:flex-row justify-center gap-4">
-            <button 
-              onClick={() => toggleModal('bookingModal', true)}
-              className="px-6 py-3 bg-accent text-white rounded-md hover:bg-amber-600 transition text-lg font-medium"
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Book Your Photography Session?</h2>
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            Contact us today to discuss your photography needs and schedule your session.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link 
+              to="/booking" 
+              className="px-8 py-3 bg-white text-blue-600 rounded-md font-medium hover:bg-gray-100 transition-colors"
             >
               Book Now
-            </button>
-            <Link to="/contact" className="px-6 py-3 bg-white text-primary rounded-md hover:bg-gray-100 transition text-lg font-medium">
+            </Link>
+            <Link 
+              to="/contact" 
+              className="px-8 py-3 border-2 border-white text-white rounded-md font-medium hover:bg-white hover:text-blue-600 transition-colors"
+            >
               Contact Us
             </Link>
           </div>
         </div>
       </section>
-    </motion.div>
-  )
-}
+    </div>
+  );
+};
 
-export default PricingPage
+// Category Button Component
+const CategoryButton = ({ label, isActive, onClick }) => (
+  <button
+    className={`px-6 py-2 rounded-full transition-colors ${
+      isActive
+        ? 'bg-blue-500 text-white'
+        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    }`}
+    onClick={onClick}
+  >
+    {label}
+  </button>
+);
+
+// Pricing Card Component
+const PricingCard = ({ plan, index, billingCycle }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  // Calculate price based on billing cycle
+  const price = billingCycle === 'yearly' 
+    ? Math.round(plan.price * 12 * 0.8) 
+    : plan.price;
+
+  return (
+    <motion.div 
+      ref={ref}
+      className={`bg-white rounded-lg shadow-lg overflow-hidden ${plan.featured ? 'border-2 border-blue-500 relative' : ''}`}
+      initial={{ opacity: 0, y: 30 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+    >
+      {plan.featured && (
+        <div className="bg-blue-500 text-white text-center py-1 text-sm font-medium">
+          Most Popular
+        </div>
+      )}
+      
+      <div className="p-6">
+        <div className="flex items-center mb-4">
+          <span className="text-2xl mr-2">{plan.icon}</span>
+          <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+        </div>
+        <p className="text-gray-600 mb-6">{plan.description}</p>
+        
+        <div className="mb-6">
+          <span className="text-4xl font-bold text-gray-900">${price}</span>
+          <span className="text-gray-500 ml-2">
+            {billingCycle === 'yearly' ? '/year' : '/month'}
+          </span>
+          {billingCycle === 'yearly' && (
+            <span className="block text-green-500 text-sm mt-1">Save ${Math.round(plan.price * 12 * 0.2)} per year</span>
+          )}
+        </div>
+        
+        <ul className="space-y-3 mb-6">
+          {plan.features.map((feature, i) => (
+            <li key={i} className="flex items-start">
+              <svg className="w-5 h-5 text-green-500 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+        
+        <Link 
+          to="/booking" 
+          className={`block text-center py-3 rounded-md font-medium transition-colors ${
+            plan.featured 
+              ? 'bg-blue-500 text-white hover:bg-blue-600' 
+              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+          }`}
+        >
+          Select Plan
+        </Link>
+      </div>
+    </motion.div>
+  );
+};
+
+// FAQ Item Component
+const FaqItem = ({ faq, index }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="border-b border-gray-200 py-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+    >
+      <button 
+        className="flex justify-between items-center w-full text-left focus:outline-none"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <h3 className="text-lg font-medium text-gray-900">{faq.question}</h3>
+        <svg 
+          className={`w-5 h-5 text-gray-500 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      
+      <motion.div 
+        className="mt-2 overflow-hidden"
+        initial={{ height: 0 }}
+        animate={{ height: isOpen ? 'auto' : 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <p className="text-gray-600">{faq.answer}</p>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// Sample data
+const pricingPlans = [
+  {
+    id: 1,
+    name: "Basic Portrait",
+    icon: "📸",
+    description: "Perfect for individuals and small families",
+    price: 99,
+    category: "portrait",
+    features: [
+      "1-hour photo session",
+      "One location",
+      "20 edited digital images",
+      "Online gallery",
+      "Personal use rights"
+    ],
+    featured: false
+  },
+  {
+    id: 2,
+    name: "Premium Portrait",
+    icon: "📸",
+    description: "Ideal for extended families and multiple looks",
+    price: 199,
+    category: "portrait",
+    features: [
+      "2-hour photo session",
+      "Two locations",
+      "40 edited digital images",
+      "Online gallery",
+      "Personal use rights",
+      "One 11x14 print"
+    ],
+    featured: true
+  },
+  {
+    id: 3,
+    name: "Basic Wedding",
+    icon: "💍",
+    description: "Essential coverage for intimate weddings",
+    price: 999,
+    category: "wedding",
+    features: [
+      "6 hours of coverage",
+      "One photographer",
+      "200+ edited digital images",
+      "Online gallery",
+      "Personal use rights"
+    ],
+    featured: false
+  },
+  {
+    id: 4,
+    name: "Premium Wedding",
+    icon: "💍",
+    description: "Comprehensive coverage for your special day",
+    price: 1999,
+    category: "wedding",
+    features: [
+      "10 hours of coverage",
+      "Two photographers",
+      "Engagement session",
+      "500+ edited digital images",
+      "Online gallery",
+      "Custom wedding album"
+    ],
+    featured: true
+  },
+  {
+    id: 5,
+    name: "Corporate Event",
+    icon: "🎭",
+    description: "Professional coverage for business events",
+    price: 599,
+    category: "event",
+    features: [
+      "4 hours of coverage",
+      "One photographer",
+      "100+ edited digital images",
+      "Online gallery",
+      "Commercial use rights"
+    ],
+    featured: false
+  },
+  {
+    id: 6,
+    name: "Product Photography",
+    icon: "📦",
+    description: "High-quality images for your products",
+    price: 399,
+    category: "commercial",
+    features: [
+      "Up to 10 products",
+      "Multiple angles per product",
+      "White background setup",
+      "Basic retouching",
+      "Commercial use rights"
+    ],
+    featured: false
+  }
+];
+
+const faqs = [
+  {
+    question: "What's included in the session fee?",
+    answer: "The session fee includes the photographer's time and talent, basic retouching of selected images, and an online gallery. Prints, albums, and additional digital files may be purchased separately depending on your package."
+  },
+  {
+    question: "How do I book a photography session?",
+    answer: "You can book a session by selecting your preferred package, choosing an available date and time through our online booking system, and making a deposit payment to secure your reservation."
+  },
+  {
+    question: "Is a deposit required?",
+    answer: "Yes, a 50% non-refundable deposit is required to secure your booking date. The remaining balance is due one week before the scheduled session or event."
+  },
+  {
+    question: "What is your cancellation policy?",
+    answer: "Cancellations made more than 30 days before the scheduled session will receive a 50% refund of the deposit. Cancellations within 30 days of the scheduled session will forfeit the deposit. Rescheduling may be available subject to our availability."
+  },
+  {
+    question: "Do you offer custom packages?",
+    answer: "Yes, we understand that every client has unique needs. If our standard packages don't meet your requirements, please contact us to discuss a custom package tailored to your specific needs and budget."
+  },
+  {
+    question: "How long does it take to receive my photos?",
+    answer: "For portrait sessions, you can expect to receive your edited photos within 2 weeks. For weddings and larger events, the turnaround time is typically 4-6 weeks. Rush delivery is available for an additional fee."
+  }
+];
+
+export default PricingPage;

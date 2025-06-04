@@ -1,446 +1,510 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
-import { motion } from 'framer-motion'
-import toast from 'react-hot-toast'
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
-function BookingPage() {
-  const { user, userProfile } = useAuth()
-  const navigate = useNavigate()
-  const [packages, setPackages] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [selectedPackage, setSelectedPackage] = useState(null)
-  const [step, setStep] = useState(1)
-  const [formData, setFormData] = useState({
+const BookingPage = () => {
+  const [step, setStep] = useState(1);
+  const [bookingData, setBookingData] = useState({
+    service: '',
     date: '',
     time: '',
     location: '',
     notes: '',
-    service_type: 'portrait',
-    package_id: '',
-  })
-
-  useEffect(() => {
-    fetchPackages()
-  }, [])
-
-  const fetchPackages = async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('packages')
-        .select('*')
-        .eq('is_active', true)
-        .order('price', { ascending: true })
-
-      if (error) throw error
-      setPackages(data || [])
-    } catch (error) {
-      console.error('Error fetching packages:', error)
-      toast.error('Failed to load packages')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handlePackageSelect = (pkg) => {
-    setSelectedPackage(pkg)
-    setFormData({
-      ...formData,
-      package_id: pkg.id
-    })
-    setStep(2)
-  }
+    name: '',
+    email: '',
+    phone: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value
-    })
-  }
+    const { name, value } = e.target;
+    setBookingData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleServiceSelect = (service) => {
+    setBookingData(prev => ({ ...prev, service }));
+    setStep(2);
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setIsSubmitting(true);
     
-    try {
-      setLoading(true)
-      
-      const appointmentData = {
-        ...formData,
-        user_id: user.id,
-        status: 'pending',
-        payment_status: 'unpaid',
-      }
-      
-      const { data, error } = await supabase
-        .from('appointments')
-        .insert([appointmentData])
-        .select()
-
-      if (error) throw error
-      
-      toast.success('Booking request submitted successfully!')
-      navigate('/my-bookings')
-    } catch (error) {
-      console.error('Error submitting booking:', error)
-      toast.error('Failed to submit booking request')
-    } finally {
-      setLoading(false)
-    }
-  }
+    // Simulate form submission
+    setTimeout(() => {
+      toast.success('Booking request submitted successfully!');
+      setIsSubmitting(false);
+      setStep(4); // Move to confirmation step
+    }, 1500);
+  };
 
   const goBack = () => {
     if (step > 1) {
-      setStep(step - 1)
+      setStep(step - 1);
     }
-  }
-
-  if (loading && step === 1) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-      </div>
-    )
-  }
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="py-6"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900">Book Your Photography Session</h1>
-          <p className="mt-4 text-lg text-gray-500">
-            Select a package and schedule your session with DXM Productions.
+    <div className="min-h-screen pt-16 pb-20">
+      {/* Header */}
+      <div className="bg-gray-900 text-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">Book a Photography Session</h1>
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            Schedule your professional photography session in just a few simple steps.
           </p>
         </div>
+      </div>
 
-        {/* Progress steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center">
-            <div className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                1
-              </div>
-              <div className={`h-1 w-16 sm:w-24 ${
-                step >= 2 ? 'bg-primary-600' : 'bg-gray-200'
-              }`}></div>
-            </div>
-            <div className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                2
-              </div>
-              <div className={`h-1 w-16 sm:w-24 ${
-                step >= 3 ? 'bg-primary-600' : 'bg-gray-200'
-              }`}></div>
-            </div>
-            <div className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                step >= 3 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                3
-              </div>
-            </div>
+      {/* Booking Process */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          {/* Progress Steps */}
+          <div className="max-w-3xl mx-auto mb-12">
+            <ProgressSteps currentStep={step} />
           </div>
-          <div className="flex justify-center mt-2">
-            <div className="text-xs text-center w-24 sm:w-32">Select Package</div>
-            <div className="text-xs text-center w-24 sm:w-32">Schedule</div>
-            <div className="text-xs text-center w-24 sm:w-32">Confirm</div>
+
+          {/* Step Content */}
+          <div className="max-w-3xl mx-auto">
+            {step === 1 && (
+              <ServiceSelection onSelect={handleServiceSelect} />
+            )}
+            
+            {step === 2 && (
+              <DateTimeSelection 
+                bookingData={bookingData} 
+                handleChange={handleChange} 
+                goBack={goBack}
+                onNext={() => setStep(3)}
+              />
+            )}
+            
+            {step === 3 && (
+              <PersonalDetails 
+                bookingData={bookingData} 
+                handleChange={handleChange} 
+                handleSubmit={handleSubmit}
+                goBack={goBack}
+                isSubmitting={isSubmitting}
+              />
+            )}
+            
+            {step === 4 && (
+              <BookingConfirmation bookingData={bookingData} />
+            )}
           </div>
         </div>
+      </section>
+    </div>
+  );
+};
 
-        {/* Step 1: Package Selection */}
-        {step === 1 && (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {packages.map((pkg) => (
-              <div 
-                key={pkg.id} 
-                className="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => handlePackageSelect(pkg)}
-              >
-                <div className="h-48 bg-gray-200">
-                  {pkg.image_url ? (
-                    <img 
-                      src={pkg.image_url} 
-                      alt={pkg.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <i className="fas fa-camera text-4xl text-gray-400"></i>
-                    </div>
-                  )}
-                </div>
-                <div className="px-4 py-5 sm:p-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-gray-900">{pkg.name}</h3>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                      ${pkg.price}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-500">{pkg.description}</p>
-                  <div className="mt-4">
-                    <ul className="text-sm text-gray-600 space-y-2">
-                      <li className="flex items-center">
-                        <i className="fas fa-clock text-primary-600 mr-2"></i>
-                        {pkg.duration} {pkg.duration === 1 ? 'hour' : 'hours'}
-                      </li>
-                      <li className="flex items-center">
-                        <i className="fas fa-images text-primary-600 mr-2"></i>
-                        {pkg.deliverables}
-                      </li>
-                      {pkg.includes && pkg.includes.map((item, index) => (
-                        <li key={index} className="flex items-center">
-                          <i className="fas fa-check text-primary-600 mr-2"></i>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="mt-5">
-                    <button
-                      type="button"
-                      className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                    >
-                      Select Package
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+// Progress Steps Component
+const ProgressSteps = ({ currentStep }) => {
+  const steps = [
+    { number: 1, label: 'Select Service' },
+    { number: 2, label: 'Choose Date & Time' },
+    { number: 3, label: 'Your Details' },
+    { number: 4, label: 'Confirmation' }
+  ];
+
+  return (
+    <div className="flex justify-between items-center">
+      {steps.map((step, index) => (
+        <div key={step.number} className="flex flex-col items-center relative">
+          {/* Connector Line */}
+          {index < steps.length - 1 && (
+            <div className={`absolute top-4 w-full h-1 left-1/2 ${
+              currentStep > step.number ? 'bg-blue-500' : 'bg-gray-300'
+            }`}></div>
+          )}
+          
+          {/* Step Circle */}
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 ${
+            currentStep >= step.number 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-300 text-gray-600'
+          }`}>
+            {step.number}
           </div>
-        )}
+          
+          {/* Step Label */}
+          <span className={`text-sm mt-2 ${
+            currentStep >= step.number 
+              ? 'text-blue-500 font-medium' 
+              : 'text-gray-500'
+          }`}>
+            {step.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
-        {/* Step 2: Schedule */}
-        {step === 2 && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-lg leading-6 font-medium text-gray-900">Schedule Your Session</h2>
-              <div className="mt-5">
-                <form>
-                  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                    <div className="sm:col-span-3">
-                      <label htmlFor="service_type" className="block text-sm font-medium text-gray-700">
-                        Session Type
-                      </label>
-                      <div className="mt-1">
-                        <select
-                          id="service_type"
-                          name="service_type"
-                          value={formData.service_type}
-                          onChange={handleChange}
-                          className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        >
-                          <option value="portrait">Portrait Session</option>
-                          <option value="wedding">Wedding Photography</option>
-                          <option value="event">Event Photography</option>
-                          <option value="family">Family Session</option>
-                          <option value="graduation">Graduation Photos</option>
-                          <option value="headshot">Professional Headshots</option>
-                        </select>
-                      </div>
-                    </div>
+// Service Selection Component
+const ServiceSelection = ({ onSelect }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
 
-                    <div className="sm:col-span-3">
-                      <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-                        Date
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          type="date"
-                          name="date"
-                          id="date"
-                          value={formData.date}
-                          onChange={handleChange}
-                          min={new Date().toISOString().split('T')[0]}
-                          required
-                          className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="time" className="block text-sm font-medium text-gray-700">
-                        Time
-                      </label>
-                      <div className="mt-1">
-                        <select
-                          id="time"
-                          name="time"
-                          value={formData.time}
-                          onChange={handleChange}
-                          required
-                          className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        >
-                          <option value="">Select a time</option>
-                          <option value="9:00 AM">9:00 AM</option>
-                          <option value="10:00 AM">10:00 AM</option>
-                          <option value="11:00 AM">11:00 AM</option>
-                          <option value="12:00 PM">12:00 PM</option>
-                          <option value="1:00 PM">1:00 PM</option>
-                          <option value="2:00 PM">2:00 PM</option>
-                          <option value="3:00 PM">3:00 PM</option>
-                          <option value="4:00 PM">4:00 PM</option>
-                          <option value="5:00 PM">5:00 PM</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                        Location
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          type="text"
-                          name="location"
-                          id="location"
-                          value={formData.location}
-                          onChange={handleChange}
-                          required
-                          placeholder="Enter session location"
-                          className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-6">
-                      <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                        Special Requests or Notes
-                      </label>
-                      <div className="mt-1">
-                        <textarea
-                          id="notes"
-                          name="notes"
-                          rows={3}
-                          value={formData.notes}
-                          onChange={handleChange}
-                          placeholder="Any special requests or information for your photographer"
-                          className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex justify-between">
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!formData.date || !formData.time || !formData.location) {
-                          toast.error('Please fill in all required fields')
-                          return
-                        }
-                        setStep(3)
-                      }}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                    >
-                      Continue
-                    </button>
-                  </div>
-                </form>
-              </div>
+  return (
+    <motion.div 
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Select a Photography Service</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {services.map((service, index) => (
+          <motion.div 
+            key={service.id}
+            className="bg-white rounded-lg overflow-hidden shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => onSelect(service.id)}
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+          >
+            <div className="h-48 overflow-hidden">
+              <img 
+                src={service.image} 
+                alt={service.title} 
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+              />
             </div>
-          </div>
-        )}
-
-        {/* Step 3: Confirmation */}
-        {step === 3 && selectedPackage && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-lg leading-6 font-medium text-gray-900">Confirm Your Booking</h2>
-              <div className="mt-5 border-t border-gray-200 pt-5">
-                <dl className="divide-y divide-gray-200">
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                    <dt className="text-sm font-medium text-gray-500">Package</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedPackage.name}</dd>
-                  </div>
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                    <dt className="text-sm font-medium text-gray-500">Price</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${selectedPackage.price}</dd>
-                  </div>
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                    <dt className="text-sm font-medium text-gray-500">Session Type</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                      {formData.service_type.charAt(0).toUpperCase() + formData.service_type.slice(1)}
-                    </dd>
-                  </div>
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                    <dt className="text-sm font-medium text-gray-500">Date & Time</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                      {new Date(formData.date).toLocaleDateString()} at {formData.time}
-                    </dd>
-                  </div>
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                    <dt className="text-sm font-medium text-gray-500">Location</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formData.location}</dd>
-                  </div>
-                  {formData.notes && (
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                      <dt className="text-sm font-medium text-gray-500">Special Requests</dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formData.notes}</dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-
-              <div className="mt-6 bg-gray-50 p-4 rounded-md">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <i className="fas fa-info-circle text-primary-600"></i>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-900">Important Information</h3>
-                    <div className="mt-2 text-sm text-gray-500">
-                      <p>
-                        By confirming this booking, you're requesting a photography session with DXM Productions. 
-                        We'll review your request and contact you to confirm the details. 
-                        Payment will be collected after your booking is confirmed.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-between">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                >
-                  {loading ? 'Submitting...' : 'Confirm Booking'}
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">{service.title}</h3>
+              <p className="text-gray-600 mb-4">{service.description}</p>
+              <div className="flex justify-between items-center">
+                <span className="text-blue-500 font-medium">${service.price}</span>
+                <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
+                  Select
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          </motion.div>
+        ))}
       </div>
     </motion.div>
-  )
-}
+  );
+};
 
-export default BookingPage
+// Date and Time Selection Component
+const DateTimeSelection = ({ bookingData, handleChange, goBack, onNext }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  const handleNextStep = (e) => {
+    e.preventDefault();
+    onNext();
+  };
+
+  // Get current date in YYYY-MM-DD format for min date attribute
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Calculate max date (6 months from now)
+  const maxDate = new Date();
+  maxDate.setMonth(maxDate.getMonth() + 6);
+  const maxDateStr = maxDate.toISOString().split('T')[0];
+
+  return (
+    <motion.div 
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Date and Time</h2>
+      
+      <form onSubmit={handleNextStep}>
+        <div className="mb-6">
+          <label htmlFor="date" className="block text-gray-700 mb-2">Preferred Date</label>
+          <input
+            type="date"
+            id="date"
+            name="date"
+            min={today}
+            max={maxDateStr}
+            value={bookingData.date}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div className="mb-6">
+          <label htmlFor="time" className="block text-gray-700 mb-2">Preferred Time</label>
+          <select
+            id="time"
+            name="time"
+            value={bookingData.time}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="">Select a time</option>
+            <option value="9:00 AM">9:00 AM</option>
+            <option value="10:00 AM">10:00 AM</option>
+            <option value="11:00 AM">11:00 AM</option>
+            <option value="1:00 PM">1:00 PM</option>
+            <option value="2:00 PM">2:00 PM</option>
+            <option value="3:00 PM">3:00 PM</option>
+            <option value="4:00 PM">4:00 PM</option>
+          </select>
+        </div>
+        
+        <div className="mb-6">
+          <label htmlFor="location" className="block text-gray-700 mb-2">Location Preference</label>
+          <select
+            id="location"
+            name="location"
+            value={bookingData.location}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="">Select a location</option>
+            <option value="studio">Our Studio</option>
+            <option value="outdoor">Outdoor Location</option>
+            <option value="client">Client's Location</option>
+          </select>
+        </div>
+        
+        <div className="mb-6">
+          <label htmlFor="notes" className="block text-gray-700 mb-2">Additional Notes</label>
+          <textarea
+            id="notes"
+            name="notes"
+            value={bookingData.notes}
+            onChange={handleChange}
+            rows="3"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          ></textarea>
+        </div>
+        
+        <div className="flex justify-between">
+          <button
+            type="button"
+            onClick={goBack}
+            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      </form>
+    </motion.div>
+  );
+};
+
+// Personal Details Component
+const PersonalDetails = ({ bookingData, handleChange, handleSubmit, goBack, isSubmitting }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Details</h2>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="mb-6">
+          <label htmlFor="name" className="block text-gray-700 mb-2">Full Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={bookingData.name}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div className="mb-6">
+          <label htmlFor="email" className="block text-gray-700 mb-2">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={bookingData.email}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div className="mb-6">
+          <label htmlFor="phone" className="block text-gray-700 mb-2">Phone Number</label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            value={bookingData.phone}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Booking Summary</h3>
+          <div className="bg-gray-100 p-4 rounded-md">
+            <p><strong>Service:</strong> {getServiceName(bookingData.service)}</p>
+            <p><strong>Date:</strong> {bookingData.date}</p>
+            <p><strong>Time:</strong> {bookingData.time}</p>
+            <p><strong>Location:</strong> {getLocationName(bookingData.location)}</p>
+            {bookingData.notes && <p><strong>Notes:</strong> {bookingData.notes}</p>}
+          </div>
+        </div>
+        
+        <div className="flex justify-between">
+          <button
+            type="button"
+            onClick={goBack}
+            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`px-6 py-2 bg-blue-500 text-white rounded-md transition-colors ${
+              isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'
+            }`}
+          >
+            {isSubmitting ? 'Submitting...' : 'Complete Booking'}
+          </button>
+        </div>
+      </form>
+    </motion.div>
+  );
+};
+
+// Booking Confirmation Component
+const BookingConfirmation = ({ bookingData }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="text-center"
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="mb-8">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Confirmed!</h2>
+        <p className="text-gray-600 mb-6">
+          Thank you for booking a photography session with us. We've sent a confirmation email to {bookingData.email} with all the details.
+        </p>
+      </div>
+      
+      <div className="bg-gray-100 p-6 rounded-lg mb-8 text-left max-w-md mx-auto">
+        <h3 className="text-lg font-semibold mb-4">Booking Details</h3>
+        <p className="mb-2"><strong>Service:</strong> {getServiceName(bookingData.service)}</p>
+        <p className="mb-2"><strong>Date:</strong> {bookingData.date}</p>
+        <p className="mb-2"><strong>Time:</strong> {bookingData.time}</p>
+        <p className="mb-2"><strong>Location:</strong> {getLocationName(bookingData.location)}</p>
+        <p className="mb-2"><strong>Name:</strong> {bookingData.name}</p>
+        <p className="mb-2"><strong>Email:</strong> {bookingData.email}</p>
+        <p className="mb-2"><strong>Phone:</strong> {bookingData.phone}</p>
+        {bookingData.notes && <p><strong>Notes:</strong> {bookingData.notes}</p>}
+      </div>
+      
+      <p className="text-gray-600 mb-8">
+        Our team will contact you shortly to confirm your booking and discuss any additional details.
+      </p>
+      
+      <div className="flex justify-center space-x-4">
+        <Link 
+          to="/" 
+          className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+        >
+          Return to Home
+        </Link>
+        <Link 
+          to="/contact" 
+          className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+        >
+          Contact Us
+        </Link>
+      </div>
+    </motion.div>
+  );
+};
+
+// Helper functions
+const getServiceName = (serviceId) => {
+  const service = services.find(s => s.id === serviceId);
+  return service ? service.title : serviceId;
+};
+
+const getLocationName = (locationId) => {
+  const locations = {
+    'studio': 'Our Studio',
+    'outdoor': 'Outdoor Location',
+    'client': 'Client\'s Location'
+  };
+  return locations[locationId] || locationId;
+};
+
+// Sample data
+const services = [
+  {
+    id: 'portrait',
+    title: 'Portrait Session',
+    description: 'Professional portrait photography for individuals, couples, or families.',
+    price: 199,
+    image: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+  },
+  {
+    id: 'wedding',
+    title: 'Wedding Photography',
+    description: 'Comprehensive coverage of your special day with multiple photographers.',
+    price: 1499,
+    image: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+  },
+  {
+    id: 'event',
+    title: 'Event Coverage',
+    description: 'Professional photography for corporate events, parties, and special occasions.',
+    price: 599,
+    image: 'https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+  },
+  {
+    id: 'commercial',
+    title: 'Commercial Photography',
+    description: 'High-quality images for advertising, websites, and marketing materials.',
+    price: 799,
+    image: 'https://images.pexels.com/photos/2253275/pexels-photo-2253275.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+  }
+];
+
+export default BookingPage;

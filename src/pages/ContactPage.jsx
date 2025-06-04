@@ -1,251 +1,402 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { supabase } from '../lib/supabase'
-import toast from 'react-hot-toast'
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { FiMapPin, FiPhone, FiMail, FiClock } from 'react-icons/fi';
 
-function ContactPage() {
+const ContactPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     subject: '',
     message: ''
-  })
-  const [isLoading, setIsLoading] = useState(false)
+  });
+  const [formStatus, setFormStatus] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert([
-          {
-            name: formData.name,
-            email: formData.email,
-            subject: formData.subject,
-            message: formData.message,
-            status: 'new'
-          }
-        ])
-
-      if (error) throw error
-
-      toast.success('Your message has been sent successfully. We\'ll get back to you soon.')
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate form submission
+    setTimeout(() => {
+      setFormStatus('success');
+      setIsSubmitting(false);
+      // Reset form after successful submission
       setFormData({
         name: '',
         email: '',
+        phone: '',
         subject: '',
         message: ''
-      })
-    } catch (error) {
-      console.error('Error submitting contact form:', error)
-      toast.error('There was an error sending your message. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      });
+    }, 1500);
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      {/* Hero Section */}
-      <section className="bg-primary text-white py-20">
+    <div className="min-h-screen pt-16 pb-20">
+      {/* Header */}
+      <div className="bg-gray-900 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Contact Us</h1>
-          <p className="text-xl max-w-3xl mx-auto">Get in touch to discuss your photography needs or book a session.</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">Contact Us</h1>
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            Have questions or ready to book a session? Get in touch with our team.
+          </p>
+        </div>
+      </div>
+
+      {/* Contact Information */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <ContactInfoCard 
+              icon={<FiMapPin />}
+              title="Our Location"
+              details={["123 Photography Lane", "New York, NY 10001"]}
+              index={0}
+            />
+            <ContactInfoCard 
+              icon={<FiPhone />}
+              title="Phone Number"
+              details={["(555) 123-4567", "Mon-Fri, 9am-5pm"]}
+              index={1}
+            />
+            <ContactInfoCard 
+              icon={<FiMail />}
+              title="Email Address"
+              details={["info@lenscraft.com", "support@lenscraft.com"]}
+              index={2}
+            />
+            <ContactInfoCard 
+              icon={<FiClock />}
+              title="Working Hours"
+              details={["Monday-Friday: 9am-5pm", "Saturday: 10am-3pm"]}
+              index={3}
+            />
+          </div>
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section className="py-16">
+      {/* Contact Form and Map */}
+      <section className="py-10 bg-gray-100">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <div className="bg-gray-50 p-8 rounded-lg shadow-md">
-              <h2 className="text-2xl font-serif font-bold mb-6">Send a Message</h2>
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <label htmlFor="name" className="block text-gray-700 mb-2">Your Name</label>
-                    <input 
-                      type="text" 
-                      id="name" 
-                      name="name" 
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent" 
-                      required 
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-gray-700 mb-2">Email Address</label>
-                    <input 
-                      type="email" 
-                      id="email" 
-                      name="email" 
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent" 
-                      required 
-                    />
-                  </div>
-                </div>
-                <div className="mb-6">
-                  <label htmlFor="subject" className="block text-gray-700 mb-2">Subject</label>
-                  <input 
-                    type="text" 
-                    id="subject" 
-                    name="subject" 
-                    value={formData.subject}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent" 
-                    required 
-                  />
-                </div>
-                <div className="mb-6">
-                  <label htmlFor="message" className="block text-gray-700 mb-2">Your Message</label>
-                  <textarea 
-                    id="message" 
-                    name="message" 
-                    rows="5" 
-                    value={formData.message}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent" 
-                    required
-                  ></textarea>
-                </div>
-                <button 
-                  type="submit" 
-                  className="px-6 py-3 bg-accent text-white rounded-md hover:bg-amber-600 transition"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Sending...' : 'Send Message'}
-                </button>
-              </form>
-            </div>
+            <ContactForm 
+              formData={formData}
+              handleChange={handleChange}
+              handleSubmit={handleSubmit}
+              formStatus={formStatus}
+              isSubmitting={isSubmitting}
+            />
             
-            {/* Contact Information */}
+            {/* Map and Additional Info */}
             <div>
-              <h2 className="text-2xl font-serif font-bold mb-6">Contact Information</h2>
-              <div className="space-y-6">
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mr-4">
-                    <i className="fas fa-map-marker-alt text-accent"></i>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium">Location</h3>
-                    <p className="text-gray-600">Houston, TX</p>
-                    <p className="text-gray-600">Available for travel throughout Texas</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mr-4">
-                    <i className="fas fa-phone text-accent"></i>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium">Phone</h3>
-                    <p className="text-gray-600">832-924-3668</p>
-                    <p className="text-gray-600">Monday - Friday, 9am - 6pm</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mr-4">
-                    <i className="fas fa-envelope text-accent"></i>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium">Email</h3>
-                    <p className="text-gray-600">Derrick@dxmproductions.com</p>
-                    <p className="text-gray-600">We'll respond within 24-48 hours</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Social Media */}
-              <div className="mt-12">
-                <h3 className="text-lg font-medium mb-4">Follow Us</h3>
-                <div className="flex space-x-4">
-                  <a href="#" className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-accent hover:text-white transition-colors">
-                    <i className="fab fa-facebook-f"></i>
-                  </a>
-                  <a href="#" className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-accent hover:text-white transition-colors">
-                    <i className="fab fa-instagram"></i>
-                  </a>
-                  <a href="#" className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-accent hover:text-white transition-colors">
-                    <i className="fab fa-twitter"></i>
-                  </a>
-                  <a href="#" className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-accent hover:text-white transition-colors">
-                    <i className="fab fa-linkedin-in"></i>
-                  </a>
-                </div>
-              </div>
-
-              {/* Business Hours */}
-              <div className="mt-12">
-                <h3 className="text-lg font-medium mb-4">Business Hours</h3>
-                <ul className="space-y-2">
-                  <li className="flex justify-between">
-                    <span className="text-gray-600">Monday - Friday</span>
-                    <span className="text-gray-800 font-medium">9:00 AM - 6:00 PM</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span className="text-gray-600">Saturday</span>
-                    <span className="text-gray-800 font-medium">10:00 AM - 4:00 PM</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span className="text-gray-600">Sunday</span>
-                    <span className="text-gray-800 font-medium">Closed</span>
-                  </li>
-                </ul>
-                <p className="mt-4 text-gray-600">
-                  <i className="fas fa-info-circle mr-2 text-accent"></i>
-                  Photo sessions are available outside of business hours by appointment.
-                </p>
-              </div>
+              <MapSection />
+              <AdditionalInfo />
             </div>
           </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-serif font-bold text-center mb-12">Frequently Asked Questions</h2>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Find quick answers to common questions about our services.
+            </p>
+          </div>
           
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">How do I book a photography session?</h3>
-              <p className="text-gray-600">You can book a session by filling out the contact form above, calling us directly, or using the "Book Now" button on our website. We'll get back to you within 24-48 hours to discuss your needs and schedule your session.</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">What areas do you serve?</h3>
-              <p className="text-gray-600">We're based in Houston, TX, but we serve the entire Houston metropolitan area. We're also available for travel throughout Texas for an additional fee.</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">How far in advance should I book?</h3>
-              <p className="text-gray-600">For portrait sessions, we recommend booking 2-4 weeks in advance. For events and weddings, we suggest booking 3-6 months in advance to ensure availability, especially during peak seasons (spring and fall).</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-medium mb-2">Do you offer rush delivery for photos?</h3>
-              <p className="text-gray-600">Yes, we offer rush delivery options for an additional fee. Standard delivery is 2-3 weeks for portrait sessions and 3-4 weeks for events, but we can expedite this process if needed.</p>
-            </div>
+          <div className="max-w-3xl mx-auto">
+            {faqs.map((faq, index) => (
+              <FaqItem key={index} faq={faq} index={index} />
+            ))}
           </div>
         </div>
       </section>
-    </motion.div>
-  )
-}
+    </div>
+  );
+};
 
-export default ContactPage
+// Contact Info Card Component
+const ContactInfoCard = ({ icon, title, details, index }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="bg-white rounded-lg p-6 shadow-md text-center"
+      initial={{ opacity: 0, y: 30 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+    >
+      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-500 text-xl mb-4">
+        {icon}
+      </div>
+      <h3 className="text-lg font-semibold mb-3 text-gray-900">{title}</h3>
+      {details.map((detail, i) => (
+        <p key={i} className="text-gray-600">{detail}</p>
+      ))}
+    </motion.div>
+  );
+};
+
+// Contact Form Component
+const ContactForm = ({ formData, handleChange, handleSubmit, formStatus, isSubmitting }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="bg-white rounded-lg p-8 shadow-md"
+      initial={{ opacity: 0, x: -30 }}
+      animate={inView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Send Us a Message</h2>
+      
+      {formStatus === 'success' && (
+        <div className="mb-6 p-4 bg-green-100 text-green-700 rounded-md">
+          Thank you for your message! We'll get back to you soon.
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label htmlFor="name" className="block text-gray-700 mb-2">Your Name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-gray-700 mb-2">Email Address</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label htmlFor="phone" className="block text-gray-700 mb-2">Phone Number</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="subject" className="block text-gray-700 mb-2">Subject</label>
+            <select
+              id="subject"
+              name="subject"
+              value={formData.subject}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">Select a subject</option>
+              <option value="booking">Booking Inquiry</option>
+              <option value="pricing">Pricing Information</option>
+              <option value="availability">Check Availability</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="mb-6">
+          <label htmlFor="message" className="block text-gray-700 mb-2">Your Message</label>
+          <textarea
+            id="message"
+            name="message"
+            value={formData.message}
+            onChange={handleChange}
+            rows="5"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          ></textarea>
+        </div>
+        
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`px-6 py-3 bg-blue-500 text-white rounded-md font-medium transition-colors ${
+            isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'
+          }`}
+        >
+          {isSubmitting ? 'Sending...' : 'Send Message'}
+        </button>
+      </form>
+    </motion.div>
+  );
+};
+
+// Map Section Component
+const MapSection = () => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="bg-white rounded-lg p-4 shadow-md mb-8"
+      initial={{ opacity: 0, x: 30 }}
+      animate={inView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="aspect-video bg-gray-200 rounded-md overflow-hidden">
+        {/* Placeholder for map - in a real app, you'd use Google Maps or similar */}
+        <div className="w-full h-full flex items-center justify-center bg-gray-300">
+          <span className="text-gray-600">Map Location</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Additional Info Component
+const AdditionalInfo = () => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="bg-white rounded-lg p-8 shadow-md"
+      initial={{ opacity: 0, x: 30 }}
+      animate={inView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <h3 className="text-xl font-semibold mb-4 text-gray-900">Additional Information</h3>
+      <p className="text-gray-600 mb-4">
+        For urgent inquiries, please call us directly at (555) 123-4567. We strive to respond to all email inquiries within 24 hours during business days.
+      </p>
+      <p className="text-gray-600 mb-4">
+        If you're interested in booking a session, we recommend contacting us at least 2-3 weeks in advance to ensure availability, especially during peak seasons.
+      </p>
+      <div className="flex space-x-4 mt-6">
+        <a 
+          href="#" 
+          className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-blue-500 hover:text-white transition-colors"
+        >
+          IG
+        </a>
+        <a 
+          href="#" 
+          className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-blue-500 hover:text-white transition-colors"
+        >
+          FB
+        </a>
+        <a 
+          href="#" 
+          className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-blue-500 hover:text-white transition-colors"
+        >
+          TW
+        </a>
+      </div>
+    </motion.div>
+  );
+};
+
+// FAQ Item Component
+const FaqItem = ({ faq, index }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="border-b border-gray-200 py-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+    >
+      <button 
+        className="flex justify-between items-center w-full text-left focus:outline-none"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <h3 className="text-lg font-medium text-gray-900">{faq.question}</h3>
+        <svg 
+          className={`w-5 h-5 text-gray-500 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      
+      <motion.div 
+        className="mt-2 overflow-hidden"
+        initial={{ height: 0 }}
+        animate={{ height: isOpen ? 'auto' : 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <p className="text-gray-600">{faq.answer}</p>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// Sample data
+const faqs = [
+  {
+    question: "How do I book a photography session?",
+    answer: "You can book a session by filling out our contact form, calling us directly, or using our online booking system. We'll confirm your date and time based on availability and provide you with all necessary information."
+  },
+  {
+    question: "What should I wear for my portrait session?",
+    answer: "We recommend wearing solid colors and avoiding busy patterns. Coordinate colors with other participants but don't match exactly. We'll provide a detailed style guide after booking to help you prepare."
+  },
+  {
+    question: "How long does it take to receive my photos?",
+    answer: "For portrait sessions, you can expect to receive your edited photos within 2 weeks. For weddings and larger events, the turnaround time is typically 4-6 weeks. Rush delivery is available for an additional fee."
+  },
+  {
+    question: "Do you travel for photography sessions?",
+    answer: "Yes, we offer travel services for photography sessions. Local travel within 30 miles is included in our standard packages. For destinations beyond that, additional travel fees may apply."
+  },
+  {
+    question: "What happens if it rains on the day of my outdoor session?",
+    answer: "If weather conditions are unfavorable for an outdoor session, we'll work with you to either reschedule for another day or move to an indoor location. We always have backup plans for weather-related issues."
+  }
+];
+
+export default ContactPage;

@@ -1,84 +1,148 @@
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 
-function Footer() {
+const Footer = () => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="bg-primary text-white py-12">
+    <motion.footer 
+      ref={ref}
+      className="bg-gray-900 text-white pt-16 pb-8"
+      initial={{ opacity: 0 }}
+      animate={inView ? { opacity: 1 } : { opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-serif font-bold mb-4">DXM Productions</h3>
-            <p className="mb-4">Professional photography services in Houston, TX specializing in graduations, proms, senior photos, headshots, business events, parties, fashion and modeling.</p>
+            <h3 className="text-xl font-bold mb-4">DXM Productions</h3>
+            <p className="text-gray-400 mb-4">
+              Professional photography services capturing life's most precious moments with artistry and authenticity.
+            </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-white hover:text-accent transition">
-                <i className="fab fa-facebook-f"></i>
-              </a>
-              <a href="#" className="text-white hover:text-accent transition">
-                <i className="fab fa-instagram"></i>
-              </a>
-              <a href="#" className="text-white hover:text-accent transition">
-                <i className="fab fa-twitter"></i>
-              </a>
-              <a href="#" className="text-white hover:text-accent transition">
-                <i className="fab fa-linkedin-in"></i>
-              </a>
+              <SocialLink icon="IG" href="#" />
+              <SocialLink icon="FB" href="#" />
+              <SocialLink icon="TW" href="#" />
+              <SocialLink icon="YT" href="#" />
             </div>
           </div>
-          
+
           {/* Quick Links */}
           <div>
-            <h3 className="text-xl font-medium mb-4">Quick Links</h3>
+            <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              <li><Link to="/" className="text-gray-300 hover:text-white transition">Home</Link></li>
-              <li><Link to="/gallery" className="text-gray-300 hover:text-white transition">Portfolio</Link></li>
-              <li><Link to="/services" className="text-gray-300 hover:text-white transition">Services</Link></li>
-              <li><Link to="/pricing" className="text-gray-300 hover:text-white transition">Pricing</Link></li>
-              <li><Link to="/contact" className="text-gray-300 hover:text-white transition">Contact</Link></li>
+              <FooterLink to="/" label="Home" />
+              <FooterLink to="/gallery" label="Gallery" />
+              <FooterLink to="/services" label="Services" />
+              <FooterLink to="/about" label="About Us" />
+              <FooterLink to="/contact" label="Contact" />
+              <FooterLink to="/booking" label="Book a Session" />
             </ul>
           </div>
-          
+
           {/* Services */}
           <div>
-            <h3 className="text-xl font-medium mb-4">Services</h3>
+            <h3 className="text-lg font-semibold mb-4">Our Services</h3>
             <ul className="space-y-2">
-              <li><Link to="/services" className="text-gray-300 hover:text-white transition">Graduation Photography</Link></li>
-              <li><Link to="/services" className="text-gray-300 hover:text-white transition">Portrait Photography</Link></li>
-              <li><Link to="/services" className="text-gray-300 hover:text-white transition">Event Photography</Link></li>
-              <li><Link to="/services" className="text-gray-300 hover:text-white transition">Fashion Photography</Link></li>
-              <li><Link to="/services" className="text-gray-300 hover:text-white transition">Business Photography</Link></li>
+              <FooterLink to="/services" label="Wedding Photography" />
+              <FooterLink to="/services" label="Portrait Sessions" />
+              <FooterLink to="/services" label="Event Coverage" />
+              <FooterLink to="/services" label="Commercial Photography" />
+              <FooterLink to="/services" label="Family Portraits" />
+              <FooterLink to="/services" label="Product Photography" />
             </ul>
           </div>
-          
+
           {/* Contact Info */}
           <div>
-            <h3 className="text-xl font-medium mb-4">Contact Info</h3>
-            <ul className="space-y-2">
+            <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
+            <ul className="space-y-3">
               <li className="flex items-start">
-                <i className="fas fa-map-marker-alt mt-1 mr-2"></i>
-                <span>Houston, TX</span>
+                <span className="text-blue-400 mr-2">📍</span>
+                <span>123 Photography Lane<br />New York, NY 10001</span>
               </li>
-              <li className="flex items-start">
-                <i className="fas fa-phone mt-1 mr-2"></i>
-                <span>832-924-3668</span>
+              <li className="flex items-center">
+                <span className="text-blue-400 mr-2">📞</span>
+                <span>(555) 123-4567</span>
               </li>
-              <li className="flex items-start">
-                <i className="fas fa-envelope mt-1 mr-2"></i>
-                <span>Derrick@dxmproductions.com</span>
+              <li className="flex items-center">
+                <span className="text-blue-400 mr-2">✉️</span>
+                <span>info@dxmproductions.com</span>
               </li>
-              <li className="flex items-start">
-                <i className="fas fa-globe mt-1 mr-2"></i>
-                <span>www.dxmproductions.com</span>
+              <li className="flex items-center">
+                <span className="text-blue-400 mr-2">⏰</span>
+                <span>Mon-Fri: 9am-5pm</span>
               </li>
             </ul>
           </div>
         </div>
-        
-        <div className="border-t border-gray-700 mt-8 pt-8 text-center">
-          <p>&copy; {new Date().getFullYear()} DXM Productions. All rights reserved.</p>
+
+        {/* Newsletter */}
+        <div className="border-t border-gray-800 pt-8 pb-8">
+          <div className="max-w-xl mx-auto text-center">
+            <h3 className="text-lg font-semibold mb-2">Subscribe to Our Newsletter</h3>
+            <p className="text-gray-400 mb-4">
+              Stay updated with our latest work, special offers, and photography tips.
+            </p>
+            <form className="flex flex-col sm:flex-row gap-2">
+              <input 
+                type="email" 
+                placeholder="Your email address" 
+                className="flex-grow px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <button 
+                type="submit"
+                className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              >
+                Subscribe
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
+          <p>© {currentYear} DXM Productions. All rights reserved.</p>
+          <div className="flex justify-center space-x-4 mt-2">
+            <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
+          </div>
         </div>
       </div>
-    </footer>
-  )
-}
+    </motion.footer>
+  );
+};
 
-export default Footer
+// Footer Link Component
+const FooterLink = ({ to, label }) => (
+  <li>
+    <Link 
+      to={to}
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      {label}
+    </Link>
+  </li>
+);
+
+// Social Link Component
+const SocialLink = ({ icon, href }) => (
+  <a 
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-blue-500 hover:text-white transition-colors"
+  >
+    {icon}
+  </a>
+);
+
+export default Footer;

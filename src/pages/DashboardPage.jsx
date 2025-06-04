@@ -1,320 +1,347 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { useAuth } from '../context/AuthContext';
+import { useBooking } from '../context/BookingContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
-function DashboardPage() {
-  const { user, userProfile } = useAuth()
-  const [appointments, setAppointments] = useState([])
-  const [albums, setAlbums] = useState([])
-  const [loading, setLoading] = useState(true)
+const DashboardPage = () => {
+  const { user } = useAuth();
+  const { bookings, fetchUserBookings } = useBooking();
+  const [albums, setAlbums] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch user data
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
+    const fetchUserData = async () => {
+      if (!user) return;
+      
+      setIsLoading(true);
+      
       try {
-        if (user) {
-          // Fetch user appointments
-          const { data: appointmentsData, error: appointmentsError } = await supabase
-            .from('appointments')
-            .select(`
-              *,
-              packages (name, price, image_url)
-            `)
-            .eq('user_id', user.id)
-            .order('date', { ascending: false })
-            .limit(3)
-
-          if (appointmentsError) {
-            console.error('Error fetching appointments:', appointmentsError)
-          } else {
-            setAppointments(appointmentsData || [])
-          }
-
-          // Fetch user albums
-          const { data: albumsData, error: albumsError } = await supabase
-            .from('albums')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(3)
-
-          if (albumsError) {
-            console.error('Error fetching albums:', albumsError)
-          } else {
-            setAlbums(albumsData || [])
-          }
-        }
+        // Fetch bookings
+        await fetchUserBookings();
+        
+        // Fetch albums (mock data for now)
+        setAlbums(mockUserAlbums.slice(0, 3));
       } catch (error) {
-        console.error('Error fetching dashboard data:', error)
+        console.error('Error fetching user data:', error);
       } finally {
-        setLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [user])
+    fetchUserData();
+  }, [user, fetchUserBookings]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-      </div>
-    )
+  // Get upcoming bookings
+  const upcomingBookings = bookings.filter(booking => {
+    const bookingDate = new Date(booking.date);
+    const today = new Date();
+    return bookingDate >= today && booking.status !== 'Cancelled';
+  }).slice(0, 3);
+
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="py-6"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-      </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        {/* Welcome section */}
-        <div className="py-4">
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-lg leading-6 font-medium text-gray-900">
-                Welcome back, {userProfile?.full_name || user?.email}!
-              </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Manage your photography sessions, view your appointments, and access your photos.
+    <div className="min-h-screen pt-16 pb-20">
+      {/* Header */}
+      <div className="bg-gray-900 text-white py-20">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-2">Welcome Back{user?.user_metadata?.name ? `, ${user.user_metadata.name}` : ''}</h1>
+              <p className="text-xl text-gray-300">
+                Manage your photography sessions and albums
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Quick stats */}
-        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-3">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-primary-100 rounded-md p-3">
-                  <i className="fas fa-calendar-alt h-6 w-6 text-primary-600"></i>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Upcoming Appointments</dt>
-                    <dd>
-                      <div className="text-lg font-medium text-gray-900">{appointments.filter(a => new Date(a.date) > new Date()).length}</div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 px-4 py-4 sm:px-6">
-              <div className="text-sm">
-                <Link to="/my-bookings" className="font-medium text-primary-600 hover:text-primary-500">
-                  View all<span className="sr-only"> appointments</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-primary-100 rounded-md p-3">
-                  <i className="fas fa-images h-6 w-6 text-primary-600"></i>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Photo Albums</dt>
-                    <dd>
-                      <div className="text-lg font-medium text-gray-900">
-                        {albums.length}
-                      </div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 px-4 py-4 sm:px-6">
-              <div className="text-sm">
-                <Link to="/my-albums" className="font-medium text-primary-600 hover:text-primary-500">
-                  View all<span className="sr-only"> albums</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-primary-100 rounded-md p-3">
-                  <i className="fas fa-credit-card h-6 w-6 text-primary-600"></i>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Payment Status</dt>
-                    <dd>
-                      <div className="text-lg font-medium text-gray-900">
-                        {appointments.filter(a => a.payment_status === 'paid').length}/{appointments.length} Paid
-                      </div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 px-4 py-4 sm:px-6">
-              <div className="text-sm">
-                <Link to="/my-bookings" className="font-medium text-primary-600 hover:text-primary-500">
-                  View details
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent appointments */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg leading-6 font-medium text-gray-900">Recent Appointments</h2>
-            <Link to="/my-bookings" className="text-sm font-medium text-primary-600 hover:text-primary-500">
-              View all
-            </Link>
-          </div>
-          <div className="mt-4 bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
-              {appointments.length > 0 ? (
-                appointments.map((appointment) => (
-                  <li key={appointment.id}>
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-md flex items-center justify-center">
-                            <i className="fas fa-camera text-gray-500"></i>
-                          </div>
-                          <div className="ml-4">
-                            <p className="text-sm font-medium text-primary-600">{appointment.service_type.charAt(0).toUpperCase() + appointment.service_type.slice(1)} Session</p>
-                            <p className="text-sm text-gray-500">
-                              {new Date(appointment.date).toLocaleDateString()} at {appointment.time}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="ml-2 flex-shrink-0 flex">
-                          <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            appointment.status === 'completed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : appointment.status === 'cancelled' 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <p className="flex items-center text-sm text-gray-500">
-                            <i className="fas fa-map-marker-alt flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"></i>
-                            {appointment.location}
-                          </p>
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <p>
-                            ${appointment.packages?.price || '0'} · 
-                            <span className={`ml-1 ${
-                              appointment.payment_status === 'paid' 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            }`}>
-                              {appointment.payment_status.charAt(0).toUpperCase() + appointment.payment_status.slice(1)}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <li className="px-4 py-5 sm:px-6 text-center text-gray-500">
-                  <p>You don't have any appointments yet.</p>
-                  <Link to="/booking" className="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    Book your first session
-                  </Link>
-                </li>
-              )}
-            </ul>
-          </div>
-        </div>
-
-        {/* Recent albums */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg leading-6 font-medium text-gray-900">Recent Albums</h2>
-            <Link to="/my-albums" className="text-sm font-medium text-primary-600 hover:text-primary-500">
-              View all
-            </Link>
-          </div>
-          <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {albums.length > 0 ? (
-              albums.map((album) => (
-                <div key={album.id} className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center">
-                    {album.cover_image ? (
-                      <img 
-                        src={album.cover_image} 
-                        alt={album.title} 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <i className="fas fa-images text-4xl text-gray-400"></i>
-                    )}
-                  </div>
-                  <div className="px-4 py-4">
-                    <h3 className="text-lg font-medium text-gray-900 truncate">{album.title}</h3>
-                    <p className="text-sm text-gray-500">{album.photo_count || 0} photos</p>
-                    <div className="mt-4">
-                      <Link 
-                        to={`/my-albums/${album.id}`}
-                        className="text-sm font-medium text-primary-600 hover:text-primary-500"
-                      >
-                        View Album <i className="fas fa-arrow-right ml-1"></i>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-3 bg-white overflow-hidden shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6 text-center">
-                  <p className="text-gray-500">You don't have any albums yet.</p>
-                  <p className="text-gray-500 mt-2">Albums will appear here after your photo sessions are completed.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Book a session CTA */}
-        <div className="mt-8 bg-primary-600 rounded-lg shadow-xl overflow-hidden">
-          <div className="px-4 py-5 sm:p-6 md:flex md:items-center md:justify-between">
-            <div>
-              <h3 className="text-lg leading-6 font-medium text-white">Ready for your next photo session?</h3>
-              <div className="mt-2 max-w-xl text-sm text-primary-100">
-                <p>Book your next photography session with us and capture your special moments.</p>
-              </div>
-            </div>
-            <div className="mt-5 md:mt-0 md:ml-6">
-              <Link
-                to="/booking"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-700 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary-600 focus:ring-white"
+            <div className="mt-6 md:mt-0">
+              <Link 
+                to="/booking" 
+                className="px-6 py-3 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-600 transition-colors"
               >
-                Book Now
+                Book New Session
               </Link>
             </div>
           </div>
         </div>
       </div>
-    </motion.div>
-  )
-}
 
-export default DashboardPage
+      {/* Dashboard Content */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              {/* Upcoming Bookings */}
+              <DashboardSection 
+                title="Upcoming Bookings" 
+                viewAllLink="/my-bookings"
+                emptyMessage="You don't have any upcoming bookings."
+                actionLink="/booking"
+                actionText="Book a Session"
+                isEmpty={upcomingBookings.length === 0}
+              >
+                {upcomingBookings.map((booking, index) => (
+                  <BookingCard key={booking.id} booking={booking} index={index} />
+                ))}
+              </DashboardSection>
+
+              {/* Recent Albums */}
+              <DashboardSection 
+                title="Recent Albums" 
+                viewAllLink="/my-albums"
+                emptyMessage="You don't have any photo albums yet."
+                actionLink="/booking"
+                actionText="Book a Session"
+                isEmpty={albums.length === 0}
+                className="mt-12"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {albums.map((album, index) => (
+                    <AlbumCard key={album.id} album={album} index={index} />
+                  ))}
+                </div>
+              </DashboardSection>
+            </div>
+
+            {/* Sidebar */}
+            <div className="lg:col-span-1">
+              <ProfileCard user={user} />
+              <QuickLinks />
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+// Dashboard Section Component
+const DashboardSection = ({ title, viewAllLink, emptyMessage, actionLink, actionText, isEmpty, className, children }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className={`bg-white rounded-lg shadow-md p-6 ${className || ''}`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+        {!isEmpty && (
+          <Link 
+            to={viewAllLink} 
+            className="text-blue-500 hover:text-blue-700 transition-colors"
+          >
+            View All
+          </Link>
+        )}
+      </div>
+      
+      {isEmpty ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 mb-4">{emptyMessage}</p>
+          <Link 
+            to={actionLink} 
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            {actionText}
+          </Link>
+        </div>
+      ) : (
+        children
+      )}
+    </motion.div>
+  );
+};
+
+// Booking Card Component
+const BookingCard = ({ booking, index }) => {
+  // Format date for display
+  const formatDate = (dateString) => {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  return (
+    <motion.div 
+      className="border border-gray-200 rounded-lg p-4 mb-4 last:mb-0"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="font-semibold text-gray-900">{booking.service}</h3>
+          <p className="text-gray-500">
+            {formatDate(booking.date)} at {booking.time}
+          </p>
+          <p className="text-gray-500">Location: {booking.location}</p>
+        </div>
+        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+          {booking.status}
+        </span>
+      </div>
+      
+      <div className="mt-4 pt-2 border-t border-gray-100 flex justify-end">
+        <Link 
+          to="/my-bookings" 
+          className="text-blue-500 hover:text-blue-700 transition-colors text-sm"
+        >
+          View Details
+        </Link>
+      </div>
+    </motion.div>
+  );
+};
+
+// Album Card Component
+const AlbumCard = ({ album, index }) => {
+  return (
+    <motion.div 
+      className="overflow-hidden rounded-lg shadow-sm"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
+    >
+      <div className="h-32 overflow-hidden">
+        <img 
+          src={album.coverImage} 
+          alt={album.title} 
+          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+        />
+      </div>
+      <div className="p-4">
+        <h3 className="font-semibold text-gray-900 truncate">{album.title}</h3>
+        <p className="text-gray-500 text-sm">{album.photoCount} Photos</p>
+        <Link 
+          to={`/gallery/${album.id}`} 
+          className="text-blue-500 hover:text-blue-700 transition-colors text-sm mt-2 inline-block"
+        >
+          View Album
+        </Link>
+      </div>
+    </motion.div>
+  );
+};
+
+// Profile Card Component
+const ProfileCard = ({ user }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="bg-white rounded-lg shadow-md p-6 mb-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <div className="flex items-center mb-4">
+        <div className="w-16 h-16 rounded-full bg-gray-200 mr-4 overflow-hidden">
+          {user.user_metadata?.avatar_url ? (
+            <img 
+              src={user.user_metadata.avatar_url} 
+              alt={user.email} 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-blue-500 text-white text-2xl font-bold">
+              {user.email.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900">
+            {user.user_metadata?.name || user.email.split('@')[0]}
+          </h3>
+          <p className="text-gray-500 text-sm">{user.email}</p>
+        </div>
+      </div>
+      
+      <Link 
+        to="/profile" 
+        className="w-full block text-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+      >
+        Edit Profile
+      </Link>
+    </motion.div>
+  );
+};
+
+// Quick Links Component
+const QuickLinks = () => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  const links = [
+    { to: '/booking', label: 'Book a Session', icon: '📅' },
+    { to: '/my-bookings', label: 'Manage Bookings', icon: '📋' },
+    { to: '/my-albums', label: 'View Albums', icon: '🖼️' },
+    { to: '/gallery', label: 'Browse Gallery', icon: '🔍' },
+    { to: '/contact', label: 'Contact Support', icon: '💬' }
+  ];
+
+  return (
+    <motion.div 
+      ref={ref}
+      className="bg-white rounded-lg shadow-md p-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+    >
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Links</h2>
+      <ul className="space-y-2">
+        {links.map((link, index) => (
+          <li key={index}>
+            <Link 
+              to={link.to} 
+              className="flex items-center p-2 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <span className="mr-3 text-xl">{link.icon}</span>
+              <span className="text-gray-700">{link.label}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </motion.div>
+  );
+};
+
+// Mock data for user albums
+const mockUserAlbums = [
+  {
+    id: "wedding-sarah-michael",
+    title: "Our Wedding Photos",
+    photoCount: 120,
+    coverImage: "https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+  },
+  {
+    id: "family-portraits-2023",
+    title: "Family Portraits 2023",
+    photoCount: 45,
+    coverImage: "https://images.pexels.com/photos/1684187/pexels-photo-1684187.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+  },
+  {
+    id: "graduation-emma",
+    title: "Emma's Graduation",
+    photoCount: 78,
+    coverImage: "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+  }
+];
+
+export default DashboardPage;
